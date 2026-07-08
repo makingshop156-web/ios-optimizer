@@ -1,25 +1,90 @@
 const path = require('path');
 const fs = require('fs');
-const Database = require('better-sqlite3');
 
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, '..', 'data', 'iosperf.db');
 
 let db = null;
+let SQL = null;
 
 function getDB() {
   if (!db) {
-    const dir = path.dirname(DB_PATH);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    db = new Database(DB_PATH);
-    db.pragma('journal_mode = WAL');
-    db.pragma('foreign_keys = ON');
+    throw new Error('Database not initialized. Call initDB() first.');
   }
   return db;
 }
 
-async function initDB() {
+function prepare(sql) {
   const d = getDB();
-  d.exec(`
+  try {
+    return { stmt: d.prepare(sql), db: d };
+  } catch (e) {
+    throw new Error(`SQL prepare error: ${e.message}\nSQL: ${sql.substring(0, 100)}`);
+  }
+}
+
+function run(sql, params = []) {
+  const { stmt, db } = prepare(sql);
+  try {
+    const result = stmt.bind(params);
+    result.step();
+    stmt.free();
+    return { changes: db.getRowsModified() };
+  } catch (e) {
+    throw new Error(`SQL run error: ${e.message}\nSQL: ${sql.substring(0, 100)}`);
+  }
+}
+
+function get(sql, params = []) {
+  const { stmt } = prepare(sql);
+  try {
+    stmt.bind(params);
+    const rows = [];
+    while (stmt.step()) {
+      rows.push(stmt.getAsObject());
+    }
+    stmt.free();
+    return rows.length > 0 ? rows[0] : null;
+  } catch (e) {
+    throw new Error(`SQL get error: ${e.message}\nSQL: ${sql.substring(0, 100)}`);
+  }
+}
+
+function all(sql, params = []) {
+  const { stmt } = prepare(sql);
+  try {
+    stmt.bind(params);
+    const rows = [];
+    while (stmt.step()) {
+      rows.push(stmt.getAsObject());
+    }
+    stmt.free();
+    return rows;
+  } catch (e) {
+    throw new Error(`SQL all error: ${e.message}\nSQL: ${sql.substring(0, 100)}`);
+  }
+}
+
+function exec(sql) {
+  getDB().run(sql);
+}
+
+async function initDB() {
+  SQL = require('sql.js');
+  const dir = path.dirname(DB_PATH);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+
+  let buffer = null;
+  if (fs.existsSync(DB_PATH)) {
+    buffer = fs.readFileSync(DB_PATH);
+  }
+
+  const SQLModule = await SQL();
+  db = buffer ? new SQLModule.Database(buffer) : new SQLModule.Database();
+
+  db.run(`PRAGMA journal_mode = WAL`);
+  db.run(`PRAGMA foreign_keys = ON`);
+
+  db.run(`
     CREATE TABLE IF NOT EXISTS devices (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL DEFAULT 'Unknown',
@@ -102,36 +167,48 @@ async function initDB() {
       payload_json TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
-
-    CREATE INDEX IF NOT EXISTS idx_benchmark_device ON benchmark_results(device_id);
-    CREATE INDEX IF NOT EXISTS idx_benchmark_created ON benchmark_results(created_at);
-    CREATE INDEX IF NOT EXISTS idx_devices_last_seen ON devices(last_seen);
-    CREATE INDEX IF NOT EXISTS idx_analytics_type ON analytics_events(event_type);
   `);
 
+  // Create indexes
+  try { db.run(`CREATE INDEX IF NOT EXISTS idx_benchmark_device ON benchmark_results(device_id)`); } catch(e) {}
+  try { db.run(`CREATE INDEX IF NOT EXISTS idx_benchmark_created ON benchmark_results(created_at)`); } catch(e) {}
+  try { db.run(`CREATE INDEX IF NOT EXISTS idx_devices_last_seen ON devices(last_seen)`); } catch(e) {}
+  try { db.run(`CREATE INDEX IF NOT EXISTS idx_analytics_type ON analytics_events(event_type)`); } catch(e) {}
+
   // Seed default data
-  const count = d.prepare('SELECT COUNT(*) as c FROM profiles').get();
-  if (count.c === 0) {
-    await seedData(d);
+  const count = db.exec(`SELECT COUNT(*) as c FROM profiles`);
+  const rowCount = count.length > 0 && count[0].values ? parseInt(count[0].values[0][0]) : 0;
+  if (rowCount === 0) {
+    seedData();
   }
 
-  return d;
+  saveDB();
+  return db;
 }
 
-async function seedData(d) {
+function saveDB() {
+  try {
+    const data = db.export();
+    const buffer = Buffer.from(data);
+    const dir = path.dirname(DB_PATH);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(DB_PATH, buffer);
+  } catch (e) {
+    console.error('Failed to save database:', e.message);
+  }
+}
+
+function seedData() {
   const uuid = require('uuid').v4;
 
-  d.prepare(`INSERT INTO profiles (id,name,version,description,payload_count,restriction_keys,games,config_json)
-    VALUES (?,?,?,?,?,?,?,?)`).run(
-    uuid(), 'iOS Performance Optimizer', 'v12',
-    'Tối ưu toàn diện — 36 restriction keys, 3 game managed prefs, DNS AdGuard, DDM-ready',
-    8, 36, 3,
-    JSON.stringify({
-      dns: true, restrictions: 4, gamePrefs: 3, webClip: true, rootCA: true,
-      restrictionGroups: ['system_ml', 'icloud_sync', 'network_sharing', 'display_keyboard'],
-      games: ['com.dts.freefiremax', 'com.dts.freefireth', 'com.tencent.ig', 'com.miHoYo.GenshinImpact']
-    })
-  );
+  // Auto-save after each write
+  const autoSave = (sql, params) => { db.run(sql, params); saveDB(); };
+
+  autoSave(`INSERT INTO profiles (id,name,version,description,payload_count,restriction_keys,games,config_json) VALUES (?,?,?,?,?,?,?,?)`,
+    [uuid(), 'iOS Performance Optimizer', 'v12', 'Tối ưu toàn diện — 36 restriction keys, 3 games, DNS, DDM-ready', 8, 36, 3,
+     JSON.stringify({ dns: true, restrictions: 4, gamePrefs: 3, webClip: true, rootCA: true,
+       restrictionGroups: ['system_ml', 'icloud_sync', 'network_sharing', 'display_keyboard'],
+       games: ['com.dts.freefiremax', 'com.dts.freefireth', 'com.tencent.ig', 'com.miHoYo.GenshinImpact'] })]);
 
   const games = [
     { id: uuid(), name: 'Free Fire Max', bundle: 'com.dts.freefiremax',
@@ -144,12 +221,11 @@ async function seedData(d) {
       prefs: { RenderResolution: 0.8, ShadowQuality: 1, EffectsQuality: 2, FrameRateCap: 60 } }
   ];
 
-  const insertGame = d.prepare('INSERT INTO game_configs (id,name,bundle_id,preferences_json) VALUES (?,?,?,?)');
   for (const g of games) {
-    insertGame.run(g.id, g.name, g.bundle, JSON.stringify(g.prefs));
+    autoSave(`INSERT INTO game_configs (id,name,bundle_id,preferences_json) VALUES (?,?,?,?)`,
+      [g.id, g.name, g.bundle, JSON.stringify(g.prefs)]);
   }
 
-  // DDM declarations
   const ddms = [
     { id: uuid(), name: 'Gaming Optimizer — Conditional App', type: 'com.apple.configuration.applicationaccess',
       decl: { allowDiagnosticSubmission: false, allowAssistant: false, allowCloudDocumentSync: false, allowSpotlightSuggestions: false, allowGameCenter: false, allowAirDrop: false, allowAppleIntelligence: false },
@@ -165,10 +241,39 @@ async function seedData(d) {
       act: [{ type: 'com.apple.activation.simple', predicateType: 'com.apple.condition.time' }] }
   ];
 
-  const insertDDM = d.prepare('INSERT INTO ddm_declarations (id,name,type,declaration_json,predicates_json,activations_json) VALUES (?,?,?,?,?,?)');
   for (const ddm of ddms) {
-    insertDDM.run(ddm.id, ddm.name, ddm.type, JSON.stringify(ddm.decl), JSON.stringify(ddm.pred), JSON.stringify(ddm.act));
+    autoSave(`INSERT INTO ddm_declarations (id,name,type,declaration_json,predicates_json,activations_json) VALUES (?,?,?,?,?,?)`,
+      [ddm.id, ddm.name, ddm.type, JSON.stringify(ddm.decl), JSON.stringify(ddm.pred), JSON.stringify(ddm.act)]);
   }
 }
 
-module.exports = { getDB, initDB };
+// Wrap db methods for route compatibility
+const dbWrapper = {
+  prepare: (sql) => ({
+    run: (...params) => {
+      const stmt = db.prepare(sql);
+      stmt.bind(params);
+      stmt.step();
+      stmt.free();
+      saveDB();
+      return { changes: db.getRowsModified() };
+    },
+    get: (...params) => {
+      const stmt = db.prepare(sql);
+      stmt.bind(params);
+      const row = stmt.step() ? stmt.getAsObject() : null;
+      stmt.free();
+      return row;
+    },
+    all: (...params) => {
+      const stmt = db.prepare(sql);
+      stmt.bind(params);
+      const rows = [];
+      while (stmt.step()) rows.push(stmt.getAsObject());
+      stmt.free();
+      return rows;
+    }
+  })
+};
+
+module.exports = { getDB: () => dbWrapper, initDB, saveDB };
