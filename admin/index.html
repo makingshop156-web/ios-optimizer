@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin — iOS Performance Optimizer</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#03080e;color:#bfcde0;font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:13px;padding:20px;max-width:1200px;margin:auto;-webkit-font-smoothing:antialiased}
+h1{font-size:22px;font-weight:800;color:#ecf3ff;margin-bottom:4px}
+.sub{color:#3a5070;font-size:11px;margin-bottom:16px}
+.c{background:rgba(8,14,24,.7);border-radius:12px;padding:14px;border:1px solid rgba(50,75,120,.12);margin-bottom:10px;backdrop-filter:blur(16px)}
+.ct{font-size:9px;font-weight:700;color:#3a5070;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.g4{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px}
+.it{background:rgba(255,255,255,.015);border-radius:8px;padding:10px;text-align:center}
+.it .n{font-size:28px;font-weight:800;letter-spacing:-.5px}
+.it .l{font-size:9px;color:#3a5070;text-transform:uppercase;letter-spacing:.6px;margin-top:2px}
+.st{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(20,30,50,.2);font-size:11px}
+.st .l{color:#3a5070}
+.st .r{font-weight:700}
+table{width:100%;border-collapse:collapse;font-size:10.5px;margin:4px 0}
+th,td{padding:5px 7px;text-align:left;border-bottom:1px solid rgba(20,30,50,.3)}
+th{color:#0af;font-size:8.5px;text-transform:uppercase;letter-spacing:.4px}
+tr:hover td{background:rgba(0,170,255,.02)}
+.tabs{display:flex;gap:3px;margin-bottom:10px;flex-wrap:wrap}
+.tab{padding:6px 14px;border:none;border-radius:8px;font-size:10px;font-weight:600;cursor:pointer;background:rgba(8,14,24,.7);border:1px solid rgba(50,75,120,.12);color:#3a5070;touch-action:manipulation}
+.tab.a{color:#0af;background:rgba(0,170,255,.08);border-color:rgba(0,170,255,.2)}
+.tab:active{transform:scale(.95)}
+#app{display:none}
+#app.a{display:block}
+#loading{text-align:center;padding:60px 20px;color:#3a5070}
+.bdg{display:inline-block;padding:1px 6px;border-radius:4px;font-size:8px;font-weight:700;background:rgba(0,230,118,.08);color:#0e6}
+.bdg.y{background:rgba(255,221,0,.08);color:#fd0}
+.bdg.r{background:rgba(255,68,68,.08);color:#f44}
+.bdg.b{background:rgba(0,170,255,.08);color:#0af}
+.inp{background:rgba(255,255,255,.03);border:1px solid rgba(50,75,120,.15);border-radius:6px;padding:6px 10px;color:#bfcde0;font-size:11px;width:100%;outline:none;font-family:inherit}
+.inp:focus{border-color:rgba(0,170,255,.3)}
+.btn{padding:6px 14px;border:none;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;background:rgba(0,170,255,.08);color:#0af;border:1px solid rgba(0,170,255,.15);touch-action:manipulation}
+.btn:active{transform:scale(.95)}
+.btn.p{background:linear-gradient(135deg,#0af,#06f);color:#fff;border:none}
+.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);z-index:100;justify-content:center;align-items:center;padding:20px}
+.modal.a{display:flex}
+.modal .box{background:#0a1020;border-radius:14px;padding:20px;max-width:500px;width:100%;border:1px solid rgba(50,75,120,.2);max-height:80vh;overflow-y:auto}
+.modal .box h3{font-size:14px;color:#ecf3ff;margin-bottom:8px}
+.cd{background:#050a14;padding:8px 10px;border-radius:6px;font-family:monospace;font-size:10px;overflow-x:auto;border:1px solid rgba(20,30,50,.3);line-height:1.5;margin:4px 0}
+.refresh{float:right;font-size:10px;color:#3a5070;cursor:pointer;touch-action:manipulation}
+.refresh:active{color:#0af}
+</style>
+</head>
+<body>
+<h1>⚙ Admin Panel</h1>
+<p class="sub" id="statusBar">iOS Performance Optimizer — Kỹ sư Máy tính & Khoa học Máy tính • Hệ thống 10 kỹ sư</p>
+
+<div id="loading">🔐 Đang kết nối...</div>
+
+<div id="app">
+<div class="tabs">
+<button class="tab a" data-view="overview">Tổng quan</button>
+<button class="tab" data-view="devices">Thiết bị</button>
+<button class="tab" data-view="profiles">Profiles</button>
+<button class="tab" data-view="games">Game Configs</button>
+<button class="tab" data-view="benchmarks">Benchmark</button>
+<button class="tab" data-view="ddm">DDM</button>
+<button class="tab" data-view="restrictions">Restrictions</button>
+<button class="tab" data-view="api">API Docs</button>
+</div>
+
+<div id="view-overview" class="view a">
+<div class="g4" id="statsGrid"></div>
+<div class="c"><div class="ct">Hiệu năng gần đây (7 ngày)</div><div id="dailyChart" style="height:80px;display:flex;align-items:flex-end;gap:4px;padding:4px 0"></div></div>
+<div class="c"><div class="ct">Phân phối điểm</div><div class="g4" id="distGrid"></div></div>
+</div>
+
+<div id="view-devices" class="view">
+<div class="c">
+<div class="ct">Danh sách thiết bị <span class="refresh" onclick="loadDevices()">⟳ Refresh</span></div>
+<div style="overflow-x:auto"><table><thead><tr><th>Tên</th><th>Model</th><th>iOS</th><th>RAM</th><th>Chip</th><th>Benchmark</th><th>Điểm TB</th><th>Profile</th><th>Lần cuối</th></tr></thead><tbody id="devicesTbody"></tbody></table></div>
+</div>
+</div>
+
+<div id="view-profiles" class="view">
+<div class="c">
+<div class="ct">Profiles <button class="btn p" onclick="showCreateProfile()" style="float:right">+ Tạo mới</button></div>
+<div style="overflow-x:auto"><table><thead><tr><th>Tên</th><th>Version</th><th>Payloads</th><th>Restrictions</th><th>Games</th><th>Downloads</th><th>Ngày tạo</th></tr></thead><tbody id="profilesTbody"></tbody></table></div>
+</div>
+</div>
+
+<div id="view-games" class="view">
+<div class="c">
+<div class="ct">Game Configs <button class="btn p" onclick="showCreateGame()" style="float:right">+ Thêm game</button></div>
+<div style="overflow-x:auto"><table><thead><tr><th>Tên</th><th>Bundle ID</th><th>Preferences</th><th>Actions</th></tr></thead><tbody id="gamesTbody"></tbody></table></div>
+</div>
+</div>
+
+<div id="view-benchmarks" class="view">
+<div class="c"><div class="ct">Top thiết bị theo điểm</div><div style="overflow-x:auto"><table><thead><tr><th>Thiết bị</th><th>Model</th><th>Số benchmark</th><th>Điểm TB</th><th>Cao nhất</th></tr></thead><tbody id="benchTbody"></tbody></table></div></div>
+</div>
+
+<div id="view-ddm" class="view">
+<div class="c"><div class="ct">DDM Declarations</div><div id="ddmList"></div></div>
+<div class="c"><div class="ct">MDM vs DDM</div><div class="g2" id="ddmCompare"></div></div>
+<div class="c"><div class="ct">Gaming Template — Conditional Activations</div><div class="cd" id="ddmTemplate"></div></div>
+</div>
+
+<div id="view-restrictions" class="view">
+<div class="c"><div class="ct">Daemon Restrictions — Phân tích tác động</div><div id="rsSummary"></div></div>
+<div id="rsGroups"></div>
+</div>
+
+<div id="view-api" class="view">
+<div class="c"><div class="ct">API Endpoints</div>
+<div id="apiDoc" style="font-size:11px;line-height:1.6"></div>
+</div>
+</div>
+</div>
+
+<div class="modal" id="profileModal">
+<div class="box">
+<h3>Tạo Profile mới</h3>
+<input class="inp" id="pfName" placeholder="Tên profile" style="margin-bottom:6px">
+<input class="inp" id="pfVer" placeholder="Version (vd: v13)" style="margin-bottom:6px">
+<textarea class="inp" id="pfDesc" placeholder="Mô tả" style="height:50px;margin-bottom:6px;resize:vertical"></textarea>
+<div class="g2" style="margin-bottom:6px">
+<input class="inp" id="pfPayloads" type="number" placeholder="Payloads" value="8">
+<input class="inp" id="pfKeys" type="number" placeholder="Restriction keys" value="36">
+</div>
+<input class="inp" id="pfGames" type="number" placeholder="Số game" value="3" style="margin-bottom:8px">
+<div style="display:flex;gap:6px"><button class="btn p" onclick="createProfile()">Tạo</button><button class="btn" onclick="closeModal('profileModal')">Hủy</button></div>
+</div>
+</div>
+
+<div class="modal" id="gameModal">
+<div class="box">
+<h3>Thêm Game Config</h3>
+<input class="inp" id="gName" placeholder="Tên game" style="margin-bottom:6px">
+<input class="inp" id="gBundle" placeholder="Bundle ID (vd: com.example.game)" style="margin-bottom:8px">
+<div style="display:flex;gap:6px"><button class="btn p" onclick="createGame()">Thêm</button><button class="btn" onclick="closeModal('gameModal')">Hủy</button></div>
+</div>
+</div>
+
+<script>
+const API = window.location.origin.replace('5500','3100') + '/api/v1';
+const TOKEN = 'iosperf-admin-2026';
+
+async function api(path, opts) {
+  const r = await fetch(API + path, { headers: { ...(opts?.body ? {'Content-Type':'application/json'} : {}), 'Authorization': 'Bearer ' + TOKEN }, ...opts });
+  if (!r.ok) throw await r.json();
+  return r.json();
+}
+
+let state = {};
+
+// Tab switching
+document.querySelector('.tabs').addEventListener('click', e => {
+  const t = e.target.closest('.tab'); if (!t) return;
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('a'));
+  t.classList.add('a');
+  document.querySelectorAll('.view').forEach(x => x.classList.remove('a'));
+  document.getElementById('view-' + t.dataset.view).classList.add('a');
+});
+
+async function init() {
+  try {
+    const h = await api('/health');
+    document.getElementById('loading').id = 'app';
+    document.getElementById('app').classList.add('a');
+    document.getElementById('statusBar').textContent = 'Server: OK • ' + h.stats.devices + ' devices • ' + h.stats.benchmarks + ' benchmarks • ' + h.stats.profiles + ' profiles';
+    await Promise.all([loadOverview(), loadDevices(), loadProfiles(), loadGames(), loadBenchmarks(), loadDDM(), loadRestrictions(), loadAPI()]);
+  } catch(e) {
+    document.getElementById('loading').innerHTML = '❌ Không thể kết nối server. Chạy: <b>cd backend && npm start</b><br><br><span style="font-size:10px;color:var(--dm)">Cần cài Node.js + chạy backend server trên port 3100</span>';
+  }
+}
+
+async function loadOverview() {
+  const o = await api('/analytics/overview');
+  const grid = document.getElementById('statsGrid');
+  grid.innerHTML = mapStats(o);
+  // Daily
+  const daily = await api('/analytics/daily');
+  const chart = document.getElementById('dailyChart');
+  chart.innerHTML = daily.data.map(d => `<div style="flex:1;text-align:center"><div style="height:${Math.max(2,d.avg_score*0.8)}px;background:linear-gradient(to top,rgba(0,170,255,.4),rgba(0,100,255,.2));border-radius:4px 4px 0 0;min-height:2px"></div><div style="font-size:7px;color:#3a5070;margin-top:2px">${d.day.slice(5)}</div></div>`).join('');
+  // Distribution
+  const dist = await api('/analytics/scores/distribution');
+  document.getElementById('distGrid').innerHTML = [
+    { n: dist.excellent||0, l: 'Xuất sắc (80-100)', c: 'var(--gr)' },
+    { n: dist.good||0, l: 'Tốt (60-80)', c: 'var(--bl)' },
+    { n: dist.fair||0, l: 'Trung bình (40-60)', c: 'var(--yl)' },
+    { n: dist.poor||0, l: 'Kém (0-40)', c: 'var(--rd)' }
+  ].map(x => `<div class="it"><div class="n" style="color:${x.c}">${x.n}</div><div class="l">${x.l}</div></div>`).join('');
+}
+
+function mapStats(o) {
+  return [
+    { n: o.total_devices, l: 'Thiết bị', c: 'var(--bl)' },
+    { n: o.total_benchmarks, l: 'Benchmark', c: 'var(--gr)' },
+    { n: o.total_profiles, l: 'Profiles', c: 'var(--cy)' },
+    { n: o.total_games, l: 'Game Configs', c: 'var(--yl)' },
+    { n: o.avg_score.toFixed(0), l: 'Điểm TB', c: o.avg_score > 60 ? 'var(--gr)' : 'var(--yl)' },
+    { n: o.max_score.toFixed(0), l: 'Cao nhất', c: 'var(--bl)' },
+    { n: o.active_devices, l: 'Đang hoạt động', c: 'var(--gr)' },
+    { n: o.benchmarks_7d, l: 'Benchmark/7d', c: 'var(--cy)' }
+  ].map(x => `<div class="it"><div class="n" style="color:${x.c}">${x.n}</div><div class="l">${x.l}</div></div>`).join('');
+}
+
+async function loadDevices() {
+  const data = await api('/admin/devices?limit=50');
+  document.getElementById('devicesTbody').innerHTML = data.devices.map(d => `<tr>
+    <td><b>${d.name||'Unknown'}</b></td>
+    <td>${d.model||'--'}</td>
+    <td>${d.ios_version||'--'}</td>
+    <td>${d.ram_gb||'--'} GB</td>
+    <td>${d.chip||'--'}</td>
+    <td>${d.benchmark_count||0}</td>
+    <td><span class="bdg${(d.avg_score||0)>=80?'':(d.avg_score||0)>=50?' y':' r'}">${(d.avg_score||0).toFixed(0)}</span></td>
+    <td style="font-size:9px;color:#3a5070">${d.profile_id ? '✓ assigned' : '--'}</td>
+    <td style="font-size:9px">${d.last_seen||'--'}</td>
+  </tr>`).join('');
+}
+
+async function loadProfiles() {
+  const data = await api('/profiles');
+  document.getElementById('profilesTbody').innerHTML = data.profiles.map(p => `<tr>
+    <td><b>${p.name}</b></td>
+    <td><span class="bdg b">${p.version}</span></td>
+    <td>${p.payload_count}</td>
+    <td>${p.restriction_keys}</td>
+    <td>${p.games}</td>
+    <td>${p.download_count||0}</td>
+    <td style="font-size:9px;color:#3a5070">${p.created_at||'--'}</td>
+  </tr>`).join('');
+}
+
+async function loadGames() {
+  const data = await api('/games');
+  document.getElementById('gamesTbody').innerHTML = data.games.map(g => `<tr>
+    <td><b>${g.name}</b></td>
+    <td style="font-size:9px;color:#3a5070;font-family:monospace">${g.bundle_id}</td>
+    <td style="font-size:9px">${Object.keys(g.preferences||{}).length} keys</td>
+    <td><button class="btn" onclick="showGamePrefs('${g.id}','${g.name}')">Xem</button></td>
+  </tr>`).join('');
+}
+
+async function loadBenchmarks() {
+  const data = await api('/analytics/by-device');
+  document.getElementById('benchTbody').innerHTML = data.data.map(b => `<tr>
+    <td><b>${b.name||'Unknown'}</b></td>
+    <td>${b.model||'--'}</td>
+    <td>${b.benchmarks}</td>
+    <td><span class="bdg${b.avg_score>=80?'':b.avg_score>=50?' y':' r'}">${b.avg_score.toFixed(0)}</span></td>
+    <td><span class="bdg b">${(b.best_score||0).toFixed(0)}</span></td>
+  </tr>`).join('');
+}
+
+async function loadDDM() {
+  const d = await api('/ddm');
+  document.getElementById('ddmList').innerHTML = d.declarations.length === 0 ? '<div style="color:#3a5070;font-size:11px">Chưa có declaration nào</div>' :
+    d.declarations.map(dd => `<div style="padding:6px 0;border-bottom:1px solid rgba(20,30,50,.2)"><b>${dd.name}</b> <span class="bdg b">${dd.type.split('.').pop()}</span><div style="font-size:9px;color:#3a5070">iOS ${dd.ios_version} • ${Object.keys(dd.declaration||{}).length} keys</div></div>`).join('');
+  const cmp = await api('/ddm/comparison');
+  document.getElementById('ddmCompare').innerHTML = `
+    <div><div class="ct">MDM (iOS 5+)</div>${objTable(cmp.mdm)}</div>
+    <div><div class="ct">DDM (iOS 27+)</div>${objTable(cmp.ddm)}</div>`;
+  const tmp = await api('/ddm/template/gaming');
+  document.getElementById('ddmTemplate').innerHTML = `<div style="font-size:10px;color:#3a5070;margin-bottom:4px">${tmp.description} (${tmp.ios})</div>` + syntaxHighlight(JSON.stringify(tmp.template, null, 2));
+}
+
+function objTable(obj) {
+  return '<table>' + Object.entries(obj).map(([k,v]) => `<tr><td style="text-transform:capitalize;color:#3a5070">${k}</td><td>${v}</td></tr>`).join('') + '</table>';
+}
+
+async function loadRestrictions() {
+  const r = await api('/restrictions/analysis/summary');
+  document.getElementById('rsSummary').innerHTML = `<div class="g4">${[
+    { n: r.totalKeys, l: 'Tổng restriction keys', c: 'var(--bl)' },
+    { n: r.gamingRelated, l: 'Liên quan gaming', c: 'var(--gr)' },
+    { n: r.estimatedCPUReduction, l: 'CPU giảm', c: 'var(--yl)' },
+    { n: r.estimatedRAMFreed, l: 'RAM giải phóng', c: 'var(--cy)' }
+  ].map(x => `<div class="it"><div class="n" style="color:${x.c}">${x.n}</div><div class="l">${x.l}</div></div>`).join('')}</div>`;
+
+  const all = await api('/restrictions');
+  document.getElementById('rsGroups').innerHTML = Object.entries(all.data).map(([group, keys]) => `
+    <div class="c"><div class="ct">${group.toUpperCase()} (${keys.length} keys)</div>
+    <table><tr><th>Key</th><th>Daemon</th><th>Tác động</th><th>iOS</th><th>Gaming</th></tr>
+    ${keys.map(k => `<tr><td style="font-family:monospace;font-size:9px">${k.key}</td><td>${k.daemon}</td><td style="font-size:9px">${k.impact}</td><td>${k.ios}</td><td>${k.gaming?'<span class="bdg">✓</span>':'<span class="bdg y">✗</span>'}</td></tr>`).join('')}
+    </table></div>`).join('');
+}
+
+async function loadAPI() {
+  document.getElementById('apiDoc').innerHTML = [
+    { method: 'GET', path: '/health', desc: 'Kiểm tra server health + stats' },
+    { method: 'GET', path: '/restrictions', desc: 'Danh sách restriction keys (query: ?group=, ?gaming=true)' },
+    { method: 'GET', path: '/restrictions/analysis/summary', desc: 'Phân tích tác động tổng hợp' },
+    { method: 'GET', path: '/profiles', desc: 'Danh sách profiles' },
+    { method: 'POST', path: '/profiles', desc: 'Tạo profile mới {name, version, ...}' },
+    { method: 'GET|POST', path: '/benchmark/:deviceId', desc: 'Lấy/Gửi benchmark results' },
+    { method: 'GET', path: '/devices', desc: 'Danh sách devices' },
+    { method: 'PUT', path: '/devices/:id', desc: 'Cập nhật device info' },
+    { method: 'GET', path: '/games', desc: 'Danh sách game configs + preferences' },
+    { method: 'GET', path: '/ddm', desc: 'DDM declarations + types + comparison' },
+    { method: 'GET', path: '/ddm/comparison', desc: 'So sánh MDM vs DDM' },
+    { method: 'GET', path: '/ddm/template/gaming', desc: 'Template DDM gaming optimization' },
+    { method: 'POST', path: '/ddm/generate', desc: 'Sinh DDM declaration tùy chỉnh' },
+    { method: 'GET', path: '/analytics/overview', desc: 'Thống kê tổng quan' },
+    { method: 'GET', path: '/analytics/daily', desc: 'Daily benchmark trend (30 ngày)' },
+    { method: 'GET', path: '/admin/dashboard', desc: '[ADMIN] Dashboard stats' },
+    { method: 'GET', path: '/admin/devices', desc: '[ADMIN] Devices với pagination' },
+    { method: 'POST', path: '/admin/profiles', desc: '[ADMIN] Tạo profile' },
+    { method: 'DELETE', path: '/admin/profiles/:id', desc: '[ADMIN] Xóa profile' },
+    { method: 'POST', path: '/admin/games', desc: '[ADMIN] Thêm game config' }
+  ].map(e => `<div class="st"><span class="l"><span class="bdg${e.method==='GET'?'':e.method==='POST'?' b':' y'}">${e.method.split('|')[0]}</span> ${e.path}</span><span class="r">${e.desc}</span></div>`).join('');
+}
+
+function syntaxHighlight(json) {
+  return json.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/("(?:[^"\\]|\\.)*")(\s*:)/g,'<span style="color:#7bb8ff">$1</span>$2').replace(/(:)\s*("(?:[^"\\]|\\.)*")/g,'$1 <span style="color:#0e6">$2</span>').replace(/(:)\s*(\d+\.?\d*)/g,'$1 <span style="color:#fd0">$2</span>').replace(/(:)\s*(true|false)/g,'$1 <span style="color:#0af">$2</span>').replace(/(:)\s*(null)/g,'$1 <span style="color:#f44">$2</span>');
+}
+
+function showCreateProfile() { document.getElementById('profileModal').classList.add('a'); }
+function showCreateGame() { document.getElementById('gameModal').classList.add('a'); }
+function closeModal(id) { document.getElementById(id).classList.remove('a'); }
+
+async function createProfile() {
+  const body = { name: document.getElementById('pfName').value, version: document.getElementById('pfVer').value || 'v1', description: document.getElementById('pfDesc').value, payloadCount: parseInt(document.getElementById('pfPayloads').value) || 0, restrictionKeys: parseInt(document.getElementById('pfKeys').value) || 0, games: parseInt(document.getElementById('pfGames').value) || 0 };
+  await api('/admin/profiles', { method: 'POST', body: JSON.stringify(body) });
+  closeModal('profileModal'); loadProfiles();
+}
+
+async function createGame() {
+  await api('/admin/games', { method: 'POST', body: JSON.stringify({ name: document.getElementById('gName').value, bundleId: document.getElementById('gBundle').value }) });
+  closeModal('gameModal'); loadGames();
+}
+
+function showGamePrefs(id, name) {
+  fetch(API + '/games/' + id).then(r => r.json()).then(g => {
+    alert('Game: ' + name + '\nBundle: ' + g.bundle_id + '\nPreferences:\n' + JSON.stringify(g.preferences, null, 2));
+  });
+}
+
+// Close modals on backdrop click
+document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.remove('a'); }));
+
+init();
+</script>
+</body>
+</html>
