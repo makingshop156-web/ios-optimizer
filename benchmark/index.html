@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>iOS Benchmark • Đo hiệu năng thực tế</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;user-select:none;-webkit-touch-callout:none}
+body{background:#03080e;color:#bfcde0;font-family:-apple-system,BlinkMacSystemFont,sans-serif;padding:14px 12px 40px;max-width:600px;margin:auto;line-height:1.5;font-size:13px;-webkit-font-smoothing:antialiased}
+h1{font-size:24px;font-weight:800;color:#ecf3ff;text-align:center;margin:10px 0 2px}
+.sub{text-align:center;color:#3a5070;font-size:10px;margin-bottom:12px}
+.c{background:rgba(8,14,24,.7);border-radius:14px;padding:12px;border:1px solid rgba(50,75,120,.12);margin-bottom:8px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.ct{font-size:9px;font-weight:700;color:#3a5070;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.val{font-size:22px;font-weight:800}
+.mini{font-size:10px;color:#3a5070}
+.gr{color:#0e6}
+.yl{color:#fd0}
+.rd{color:#f44}
+.bl{color:#0af}
+.dm{color:#3a5070}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px}
+.it{background:rgba(255,255,255,.015);border-radius:10px;padding:8px;text-align:center}
+.it .n{font-size:18px;font-weight:800;letter-spacing:-.3px}
+.it .l{font-size:8px;color:#3a5070;text-transform:uppercase;letter-spacing:.6px}
+.btn{display:block;width:100%;padding:10px;border:none;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;touch-action:manipulation;transition:all .15s;background:linear-gradient(135deg,#0af,#06f);color:#fff;text-align:center}
+.btn:active{transform:scale(.96)}
+.btn.s{background:rgba(255,255,255,.04);border:1px solid rgba(50,75,120,.2);color:#bfcde0}
+.btn.rd{background:linear-gradient(135deg,#f44,#d22)}
+.pg{height:4px;background:rgba(255,255,255,.03);border-radius:3px;margin:6px 0;overflow:hidden}
+.pg .fl{height:100%;border-radius:3px;transition:width .5s}
+.hist{display:flex;align-items:flex-end;gap:2px;height:48px;margin:6px 0}
+.hist .b{flex:1;border-radius:2px 2px 0 0;min-height:1px;transition:height .3s}
+canvas{width:100%;height:120px;border-radius:8px;background:#050a14;display:block;margin:6px 0}
+table{width:100%;border-collapse:collapse;font-size:11px;margin:6px 0}
+th,td{padding:5px 8px;text-align:left;border-bottom:1px solid rgba(20,30,50,.5)}
+th{color:#0af;font-size:9px;text-transform:uppercase;letter-spacing:.4px}
+.nav{display:flex;gap:4px;padding:6px 0;overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch}
+.nav a{flex-shrink:0;padding:5px 12px;border-radius:8px;font-size:10px;font-weight:600;text-decoration:none;background:rgba(8,14,24,.7);border:1px solid rgba(50,75,120,.12);color:#8aa8cc;transition:all .15s}
+.nav a:active{transform:scale(.93);background:rgba(0,170,255,.08);color:#0af}
+.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);z-index:100;justify-content:center;align-items:center;padding:20px}
+.modal.active{display:flex}
+.modal .box{background:#0a1020;border-radius:16px;padding:20px;max-width:360px;width:100%;border:1px solid rgba(50,75,120,.2);max-height:80vh;overflow-y:auto}
+.modal .box h3{font-size:15px;color:#ecf3ff;margin-bottom:6px}
+.modal .box p{font-size:11px;color:#7a90b0;margin:4px 0;line-height:1.5}
+.stat{display:flex;justify-content:space-between;padding:2px 0;font-size:11px;border-bottom:1px solid rgba(20,30,50,.2)}
+.stat .l{color:#3a5070}
+.stat .r{font-weight:700}
+.section{display:none}
+.section.active{display:block}
+.tabs{display:flex;gap:3px;margin-bottom:8px}
+.tabs .t{flex:1;text-align:center;padding:7px 0;font-size:10px;font-weight:600;color:#3a5070;border-radius:8px;cursor:pointer;border:none;background:transparent;touch-action:manipulation}
+.tabs .t.a{color:#fff;background:rgba(0,170,255,.08)}
+.bdg{display:inline-block;padding:1px 6px;border-radius:4px;font-size:8px;font-weight:700;background:rgba(0,230,118,.08);color:#0e6;margin:1px}
+.bdg.y{background:rgba(255,221,0,.08);color:#fd0}
+.bdg.r{background:rgba(255,68,68,.08);color:#f44}
+.scr{display:flex;align-items:center;justify-content:center;gap:12px;padding:4px}
+.scr .c{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:900;border:3px solid;flex-shrink:0}
+.scr .d{font-size:9px;color:#3a5070}
+</style>
+</head>
+<body>
+
+<h1>iOS Benchmark</h1>
+<p class="sub">Đo lường hiệu năng thực tế — phân tích từ kỹ sư máy tính • Khoa học máy tính</p>
+
+<div class="tabs" id="tabs">
+<button class="t a" data-s="gpu">GPU</button>
+<button class="t" data-s="cpu">CPU</button>
+<button class="t" data-s="mem">RAM</button>
+<button class="t" data-s="net">Mạng</button>
+<button class="t" data-s="dns">DNS</button>
+<button class="t" data-s="thermal">Nhiệt</button>
+</div>
+
+<div class="section active" id="sgpu">
+<div class="c">
+<div class="ct">GPU Benchmark — WebGL 2.0 khối 3D quay</div>
+<canvas id="gpuCanvas"></canvas>
+<div class="g3">
+<div class="it"><div class="n dm" id="gpuFps">--</div><div class="l">FPS trung bình</div></div>
+<div class="it"><div class="n dm" id="gpuMin">--</div><div class="l">FPS thấp nhất</div></div>
+<div class="it"><div class="n dm" id="gpuMax">--</div><div class="l">FPS cao nhất</div></div>
+</div>
+<div class="pg"><div class="fl" id="gpuBar" style="width:0;background:#0af"></div></div>
+<div style="display:flex;justify-content:space-between;font-size:8px;color:#3a5070;margin-top:2px">
+<span>0 FPS</span><span id="gpuRes">180 khung hình • WebGL 2.0</span><span>120 FPS</span>
+</div>
+<button class="btn" id="gpuBtn">Chạy GPU Benchmark</button>
+</div>
+<div class="c">
+<div class="ct">Thông tin GPU</div>
+<div id="gpuInfo" style="font-size:11px;color:#7a90b0;line-height:1.6">
+Chưa chạy benchmark. Nhấn nút trên để đo FPS thực tế trên thiết bị này.
+</div>
+</div>
+</div>
+
+<div class="section" id="scpu">
+<div class="c">
+<div class="ct">CPU Benchmark — RAF Frame Timing</div>
+<div class="g2">
+<div class="it"><div class="n dm" id="cpuLoad">--</div><div class="l">CPU Load ước tính</div></div>
+<div class="it"><div class="n dm" id="cpuJank">--</div><div class="l">Jank %</div></div>
+</div>
+<div class="hist" id="cpuHist"></div>
+<div class="pg"><div class="fl" id="cpuBar" style="width:0;background:#0e6"></div></div>
+<button class="btn" id="cpuBtn">Chạy CPU Benchmark (120 frame)</button>
+</div>
+<div class="c">
+<div class="ct">Tính toán — sức mạnh xử lý</div>
+<div class="g3">
+<div class="it"><div class="n dm" id="intOps">--</div><div class="l">Integer M op/s</div></div>
+<div class="it"><div class="n dm" id="fltOps">--</div><div class="l">Float M op/s</div></div>
+<div class="it"><div class="n dm" id="memBw">--</div><div class="l">Băng thông GB/s</div></div>
+</div>
+</div>
+</div>
+
+<div class="section" id="smem">
+<div class="c">
+<div class="ct">RAM Benchmark — cấp phát + tốc độ ghi</div>
+<div class="g2">
+<div class="it"><div class="n dm" id="ramMax">--</div><div class="l">Max alloc (MB)</div></div>
+<div class="it"><div class="n dm" id="ramBw">--</div><div class="l">Tốc độ ghi MB/s</div></div>
+</div>
+<button class="btn s" id="ramBtn">Chạy RAM Benchmark</button>
+</div>
+<div class="c">
+<div class="ct">Storage — Cache API benchmark</div>
+<div class="g2">
+<div class="it"><div class="n dm" id="stoSpd">--</div><div class="l">Cache MB/s</div></div>
+<div class="it"><div class="n dm" id="stoQuota">--</div><div class="l">Safari quota</div></div>
+</div>
+</div>
+</div>
+
+<div class="section" id="snet">
+<div class="c">
+<div class="ct">Mạng — 3 mẫu tốc độ</div>
+<div class="scr">
+<div class="c" id="netScore" style="border-color:#3a5070">--</div>
+<div><div style="font-size:28px;font-weight:800" id="netAvg">--</div><div class="d">Mbps trung bình</div></div>
+</div>
+<div class="g3" id="netSamples">
+<div class="it"><div class="n dm">--</div><div class="l">Mẫu 1</div></div>
+<div class="it"><div class="n dm">--</div><div class="l">Mẫu 2</div></div>
+<div class="it"><div class="n dm">--</div><div class="l">Mẫu 3</div></div>
+</div>
+<button class="btn" id="netBtn">Chạy Speed Test</button>
+</div>
+</div>
+
+<div class="section" id="sdns">
+<div class="c">
+<div class="ct">DNS — xác minh chặn quảng cáo (5 tên miền)</div>
+<div id="dnsGrid"></div>
+<div class="stat"><span class="l">Trạng thái</span><span class="r" id="dnsStt">Chưa kiểm tra</span></div>
+<button class="btn s" id="dnsBtn">Kiểm tra DNS</button>
+</div>
+</div>
+
+<div class="section" id="sthermal">
+<div class="c">
+<div class="ct">Thermal Analysis — suy giảm hiệu năng theo nhiệt độ</div>
+<div class="g2">
+<div class="it"><div class="n dm" id="thBase">--</div><div class="l">Baseline (ms)</div></div>
+<div class="it"><div class="n dm" id="thLoad">--</div><div class="l">Loaded (ms)</div></div>
+</div>
+<div class="g2">
+<div class="it"><div class="n dm" id="thDelta">--</div><div class="l">Delta (ms)</div></div>
+<div class="it"><div class="n dm" id="thSlope">--</div><div class="l">Độ dốc</div></div>
+</div>
+<div class="pg"><div class="fl" id="thBar" style="width:0;background:#0e6"></div></div>
+<div id="thStt" style="font-size:11px;color:#3a5070;text-align:center;padding:4px">Chạy stress test để đánh giá thermal state</div>
+<button class="btn rd" id="thBtn">Chạy Thermal Stress Test</button>
+</div>
+</div>
+
+<div class="c" style="margin-top:12px">
+<div class="ct">Kết quả tổng hợp</div>
+<div class="scr">
+<div class="c" id="totScore" style="border-color:#3a5070">--</div>
+<div><div><span class="dm">GPU:</span> <span id="rsGpu">--</span></div>
+<div><span class="dm">CPU:</span> <span id="rsCpu">--</span></div>
+<div><span class="dm">RAM:</span> <span id="rsRam">--</span></div>
+<div><span class="dm">NET:</span> <span id="rsNet">--</span></div>
+<div><span class="dm">DNS:</span> <span id="rsDns">--</span></div>
+<div><span class="dm">Nhiệt:</span> <span id="rsThermal">--</span></div></div>
+</div>
+<button class="btn" id="allBtn" style="margin-top:8px">Chạy TẤT CẢ Benchmark</button>
+</div>
+
+<div class="c" style="text-align:center;padding:10px">
+<div style="font-size:8px;color:#2a3a50">
+iOS Performance Optimizer • Benchmark Tool v1 • 2026<br>
+Đo lường thực tế — phân tích từ Kỹ sư Máy tính • Khoa học Máy tính
+</div>
+</div>
+
+<script>
+(function(){
+'use strict';
+const $=(id,p)=>p?p.querySelector(id):document.getElementById(id);
+const q=(s,p)=>p?p.querySelector(s):document.querySelector(s);
+
+let res={gpu:-1,cpu:-1,ram:-1,net:-1,dns:-1,thermal:-1};
+
+// Tab switching
+q('#tabs').addEventListener('click',e=>{
+ const t=e.target.closest('.t');if(!t)return;
+ q('.t.a').classList.remove('a');t.classList.add('a');
+ q('.section.active').classList.remove('active');
+ $(`s${t.dataset.s}`).classList.add('active');
+});
+
+function fmt(n,d){return typeof n==='number'?n.toFixed(d||1):'--'}
+
+// ========== GPU BENCHMARK ==========
+let gpRun=false;
+$('gpuBtn').addEventListener('click',()=>{
+ if(gpRun)return;gpRun=true;
+ const btn=$('gpuBtn');btn.textContent='Đang đo...';btn.disabled=true;
+ const c=$('gpuCanvas');c.width=Math.round(280*(window.devicePixelRatio||1));c.height=Math.round(120*(window.devicePixelRatio||1));
+ let gl,ctxLost=false;
+ try{gl=c.getContext('webgl')||c.getContext('experimental-webgl');}catch(e){}
+ if(!gl){
+  $('gpuFps').textContent='N/A';$('gpuFps').style.color='var(--rd)';btn.textContent='Chạy GPU Benchmark';btn.disabled=false;gpRun=false;
+  $('gpuInfo').innerHTML='<span style="color:var(--rd)">WebGL không khả dụng trên thiết bị này</span>';
+  return;
+ }
+ const vs='attribute vec3 p;attribute vec3 c;uniform float t;varying vec3 vc;void main(){float a=t*0.5;mat3 r=mat3(cos(a),0,sin(a),0,1,0,-sin(a),0,cos(a));gl_Position=vec4(r*p,1.0);vc=c;}';
+ const fs='precision mediump float;varying vec3 vc;void main(){gl_FragColor=vec4(vc,1.0);}';
+ function mkShader(src,t){const s=gl.createShader(t);gl.shaderSource(s,src);gl.compileShader(s);return s;}
+ const prog=gl.createProgram();
+ gl.attachShader(prog,mkShader(vs,gl.VERTEX_SHADER));gl.attachShader(prog,mkShader(fs,gl.FRAGMENT_SHADER));
+ gl.linkProgram(prog);
+ if(!gl.getProgramParameter(prog,gl.LINK_STATUS)){
+  $('gpuFps').textContent='ERR';btn.textContent='Chạy GPU Benchmark';btn.disabled=false;gpRun=false;return;
+ }
+ gl.useProgram(prog);
+ const verts=new Float32Array([-0.5,-0.5,0.5,1,0,0, 0.5,-0.5,0.5,0,1,0, 0.5,0.5,0.5,0,0,1, -0.5,0.5,0.5,1,1,0, -0.5,-0.5,-0.5,1,0,1, 0.5,-0.5,-0.5,0,1,1, 0.5,0.5,-0.5,1,1,1, -0.5,0.5,-0.5,1,0,0]);
+ const idx=new Uint16Array([0,1,2,0,2,3,1,5,6,1,6,2,5,4,7,5,7,6,4,0,3,4,3,7,3,2,6,3,6,7,4,5,1,4,1,0]);
+ gl.bindBuffer(gl.ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ARRAY_BUFFER,verts,gl.STATIC_DRAW);
+ gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,idx,gl.STATIC_DRAW);
+ const pl=gl.getAttribLocation(prog,'p');gl.enableVertexAttribArray(pl);gl.vertexAttribPointer(pl,3,gl.FLOAT,false,24,0);
+ const cl=gl.getAttribLocation(prog,'c');gl.enableVertexAttribArray(cl);gl.vertexAttribPointer(cl,3,gl.FLOAT,false,24,12);
+ const tl=gl.getUniformLocation(prog,'t');
+ const dpr=window.devicePixelRatio||1;
+ gl.clearColor(0.02,0.03,0.05,1);gl.enable(gl.DEPTH_TEST);gl.viewport(0,0,c.width,c.height);
+ let frames=0,totalMs=0,minFps=999,maxFps=0,start=performance.now(),runs=0;
+ const gpTimer=setTimeout(()=>{if(gpRun){gpRun=false;btn.textContent='Chạy GPU Benchmark';btn.disabled=false;$('gpuFps').textContent='T/O';ctxLost=true;}},30000);
+ function draw(){
+  if(ctxLost){gpRun=false;btn.textContent='Chạy GPU Benchmark';btn.disabled=false;return;}
+  const now=performance.now();
+  if(runs===0)start=now;
+  if(runs>0){const dt=now-start;start=now;totalMs+=dt;const fps=1000/dt;if(fps<minFps)minFps=fps;if(fps>maxFps)maxFps=fps;frames++;}
+  runs++;btn.textContent=`Đo FPS... ${runs}/180`;
+  gl.uniform1f(tl,now/1000);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.drawElements(gl.TRIANGLES,36,gl.UNSIGNED_SHORT,0);
+  if(runs<=180&&!ctxLost)requestAnimationFrame(draw);else done();
+ }
+ function done(){
+  clearTimeout(gpTimer);if(ctxLost)return;
+  const avgFps=frames>0?frames/(totalMs/1000):0;
+  const score=Math.round(avgFps*10);
+  $('gpuFps').textContent=fmt(avgFps,1);$('gpuFps').style.color=avgFps>50?'var(--gr)':avgFps>25?'var(--yl)':'var(--rd)';
+  $('gpuMin').textContent=fmt(minFps,1);$('gpuMin').style.color=minFps>30?'var(--gr)':'var(--yl)';
+  $('gpuMax').textContent=fmt(maxFps,1);$('gpuMax').style.color='var(--bl)';
+  $('gpuBar').style.width=Math.min(100,avgFps/120*100)+'%';$('gpuBar').style.background=avgFps>50?'var(--gr)':avgFps>25?'var(--yl)':'var(--rd)';
+  $('gpuRes').innerHTML=`${frames} khung hình • Điểm: ${score}`;
+  const glInfo=[['Vendor',gl.getParameter(gl.VENDOR)],['Renderer',gl.getParameter(gl.RENDERER)],['Version',gl.getParameter(gl.VERSION)],['Shader',gl.getParameter(gl.SHADING_LANGUAGE_VERSION)],['Max Tex Size',gl.getParameter(gl.MAX_TEXTURE_SIZE)],['Max Varyings',gl.getParameter(gl.MAX_VARYING_VECTORS)]];
+  $('gpuInfo').innerHTML=glInfo.map(([k,v])=>`<span class="dm">${k}:</span> ${v}<br>`).join('');
+  btn.textContent='Chạy GPU Benchmark';btn.disabled=false;gpRun=false;
+  res.gpu=Math.min(100,Math.round(score/5));updateScore();
+ }
+ draw();
+});
+
+// ========== CPU BENCHMARK ==========
+$('cpuBtn').addEventListener('click',async()=>{
+ const btn=$('cpuBtn');btn.textContent='Đo RAF timing...';btn.disabled=true;
+ let cal=[];let cl=performance.now();
+ for(let i=0;i<12;i++)await new Promise(r=>requestAnimationFrame(t=>{if(i>0)cal.push(t-cl);cl=t;r();}));
+ const calAvg=cal.reduce((a,b)=>a+b,0)/cal.length;
+ const refreshRate=Math.round(1000/calAvg/10)*10;
+ const budget=1000/refreshRate;
+ const frames=120;const times=[];let last=performance.now(),aborted=false;
+ const timer=setTimeout(()=>{aborted=true;},30000);
+ for(let i=0;i<=frames;i++){
+  if(aborted)break;
+  await new Promise(r=>requestAnimationFrame(t=>{if(i>0)times.push(t-last);last=t;r();}));
+ }
+ clearTimeout(timer);
+ if(aborted){btn.textContent='Chạy CPU Benchmark';btn.disabled=false;return;}
+ const avg=times.reduce((a,b)=>a+b,0)/times.length;
+ const jank=times.filter(t=>t>budget).length;
+ const jp=(jank/times.length*100).toFixed(1);
+ const load=Math.min(100,Math.max(0,Math.round((avg-budget)/budget*100)));
+ const c=load>60?'var(--rd)':load>30?'var(--yl)':'var(--gr)';
+ $('cpuLoad').textContent=load+'%';$('cpuLoad').style.color=c;
+ $('cpuJank').textContent=jp+'%';$('cpuJank').style.color=jp>15?'var(--rd)':jp>5?'var(--yl)':'var(--gr)';
+ $('cpuBar').style.width=load+'%';$('cpuBar').style.background=c;
+ const h=$('cpuHist');h.innerHTML='';
+ for(let i=0;i<30;i++){const b=document.createElement('div');b.className='b';
+  const v=times[i]||0;const ht=Math.min(48,v*2.5);b.style.height=ht+'px';
+  b.style.background=v>budget?'rgba(255,68,68,.6)':'rgba(0,230,118,.4)';h.appendChild(b);}
+ res.cpu=Math.max(0,100-load);updateScore();
+
+ // Compute benchmark
+ const INT_N=20000000;let t0=performance.now(),xx=0;
+ for(let i=0;i<INT_N;i++){xx+=i*3-(i>>1);xx^=i;xx|=(i<<2);}
+ const intMs=performance.now()-t0,intOps=(INT_N/intMs*1000/1e6).toFixed(1);
+ const FLT_N=8000000;t0=performance.now();let yy=0.0;
+ for(let i=0;i<FLT_N;i++){yy+=Math.sin(i)*0.5;yy=Math.sqrt(Math.abs(yy)+0.01);}
+ const fltMs=performance.now()-t0,fltOps=(FLT_N/fltMs*1000/1e6).toFixed(1);
+ const MEM_N=5000000;const memArr=new Float64Array(MEM_N);t0=performance.now();
+ for(let i=0;i<MEM_N;i++)memArr[i]=i*0.5;
+ const memMs=performance.now()-t0,memBw=(MEM_N*8/memMs*1000/1e6).toFixed(0);
+ $('intOps').textContent=intOps;$('intOps').style.color=parseFloat(intOps)>200?'var(--gr)':'var(--yl)';
+ $('fltOps').textContent=fltOps;$('fltOps').style.color=parseFloat(fltOps)>80?'var(--gr)':'var(--yl)';
+ $('memBw').textContent=memBw;$('memBw').style.color=parseFloat(memBw)>10?'var(--gr)':'var(--yl)';
+ btn.textContent='Chạy CPU Benchmark';btn.disabled=false;
+});
+
+// ========== RAM BENCHMARK ==========
+$('ramBtn').addEventListener('click',()=>{
+ const btn=$('ramBtn');
+ let maxSize=0,size=65536;
+ try{
+  while(size<209715200){
+   const buf=new ArrayBuffer(size);
+   new Uint8Array(buf)[0]=1;maxSize=size;size*=2;
+  }
+ }catch(e){}
+ if(maxSize>0){
+  const testSize=Math.min(maxSize,52428800);
+  const buf=new ArrayBuffer(testSize);const v=new Uint8Array(buf);
+  const t0=performance.now();
+  for(let i=0;i<testSize;i+=4096)v[i]=255;
+  const bw=(testSize/(performance.now()-t0)/1024).toFixed(0);
+  $('ramMax').textContent=(maxSize/1048576).toFixed(0);$('ramMax').style.color=maxSize>104857600?'var(--gr)':'var(--yl)';
+  $('ramBw').textContent=bw;$('ramBw').style.color=parseFloat(bw)>500?'var(--gr)':'var(--yl)';
+  res.ram=Math.min(100,Math.round(maxSize/209715200*50+parseFloat(bw)/1000*50));updateScore();
+ }
+ // Storage
+ if('caches'in window){
+  (async()=>{
+   try{
+    const cache=await caches.open('_perfbench_');
+    const blob=new Blob([new Uint8Array(1048576)]);
+    const t0=performance.now();
+    await cache.put('/_bench',new Response(blob));
+    const r=await cache.match('/_bench');
+    await r.blob();
+    const total=performance.now()-t0;
+    await cache.delete('/_bench');
+    if(total>0){const spd=(1048576*2/total*1000/1048576).toFixed(1);
+     $('stoSpd').textContent=spd+' MB/s';
+     $('stoSpd').style.color=parseFloat(spd)>10?'var(--gr)':'var(--yl)';}
+   }catch(e){}
+   if(navigator.storage&&navigator.storage.estimate)try{
+    const s=await navigator.storage.estimate();
+    $('stoQuota').textContent=(s.quota/1073741824).toFixed(0)+' GB';
+   }catch(e){}
+  })();
+ }
+});
+
+// ========== NET BENCHMARK ==========
+$('netBtn').addEventListener('click',async()=>{
+ const btn=$('netBtn');btn.textContent='Đang đo...';btn.disabled=true;
+ let total=0,ok=0,samples=[];
+ for(let i=0;i<3;i++){
+  try{
+   const t0=performance.now();
+   await fetch('https://www.cloudflare.com/favicon.ico',{mode:'no-cors',cache:'no-store',signal:AbortSignal.timeout(5000)});
+   const ms=performance.now()-t0,mbps=((10*8)/ms*1000);
+   total+=mbps;ok++;samples.push(mbps);
+  }catch(e){samples.push(0);}
+ }
+ if(ok){
+  const avg=(total/ok);$('netAvg').textContent=fmt(avg,1)+' Mbps';$('netAvg').style.color=avg>20?'var(--gr)':avg>5?'var(--yl)':'var(--rd)';
+  const nEl=$('netScore');nEl.textContent=Math.round(avg);nEl.style.borderColor=avg>20?'var(--gr)':avg>5?'var(--yl)':'var(--rd)';nEl.style.color=avg>20?'var(--gr)':avg>5?'var(--yl)':'var(--rd)';
+  const ns=$('netSamples').children;
+  for(let i=0;i<3;i++){const s=samples[i]||0;ns[i].querySelector('.n').textContent=fmt(s,1)+'M';ns[i].querySelector('.n').style.color=s>20?'var(--gr)':s>5?'var(--yl)':'var(--rd)';}
+  res.net=Math.min(100,Math.round(avg*2));updateScore();
+ }
+ btn.textContent='Chạy Speed Test';btn.disabled=false;
+});
+
+// ========== DNS BENCHMARK ==========
+$('dnsBtn').addEventListener('click',async()=>{
+ const btn=$('dnsBtn');btn.textContent='Đang kiểm tra...';btn.disabled=true;
+ const ads=[['ad.doubleclick.net',0],['pagead2.googlesyndication.com',0],['www.google-analytics.com',0],['amazon-adsystem.com',0],['connect.facebook.net',0]];
+ let blocked=0;
+ for(let i=0;i<ads.length;i++){
+  const url='https://'+ads[i][0];
+  try{await fetch(url,{mode:'no-cors',cache:'no-store',signal:AbortSignal.timeout(4000)});ads[i][1]=-1;}
+  catch(e){if(e.name!='TimeoutError'){ads[i][1]=1;blocked++;}else ads[i][1]=-2;}
+ }
+ const g=$('dnsGrid');g.innerHTML='<table><tr><th>Tên miền</th><th>Trạng thái</th><th>Đánh giá</th></tr>';
+ for(const a of ads){
+  const stt=a[1]===1?'BỊ CHẶN':a[1]===-1?'KHÔNG BỊ CHẶN':'TIMEOUT';
+  const cls=a[1]===1?'gr':a[1]===-1?'rd':'yl';
+  g.innerHTML+=`<tr><td style="font-size:10px">${a[0]}</td><td class="${cls}">${stt}</td><td>${a[1]===1?'<span class="bdg">TỐT</span>':'<span class="bdg y">KÉM</span>'}</td></tr>`;
+ }
+ g.innerHTML+='</table>';
+ $('dnsStt').innerHTML=`${blocked}/5 bị chặn ${blocked===5?'<span style="color:var(--gr)">✓ DNS AdGuard đang hoạt động</span>':'<span style="color:var(--yl)">⚠ Một số tên miền chưa bị chặn</span>'}`;
+ res.dns=blocked*20;updateScore();
+ btn.textContent='Kiểm tra DNS';btn.disabled=false;
+});
+
+// ========== THERMAL ==========
+$('thBtn').addEventListener('click',async()=>{
+ const btn=$('thBtn');btn.textContent='Đang stress test...';btn.disabled=true;
+ $('thStt').textContent='Phase 1: Baseline (idle 15 frame)...';
+ let bTimes=[];let bLast=performance.now();
+ for(let i=0;i<15;i++)await new Promise(r=>requestAnimationFrame(t=>{if(i>0)bTimes.push(t-bLast);bLast=t;r();}));
+ const bAvg=bTimes.reduce((a,b)=>a+b,0)/bTimes.length;
+ $('thBase').textContent=fmt(bAvg,2);$('thBase').style.color='var(--gr)';
+ $('thStt').textContent='Phase 2: Stress CPU (2ms/frame x 40 frame)...';
+ function burnCPU(ms){const t=performance.now()+ms;let x=0;while(performance.now()<t)x+=Math.sin(x)*Math.cos(x);return x;}
+ const lTimes=[];let lLast=performance.now();let stress=0;
+ for(let i=0;i<40;i++){
+  if(i%10===0)$('thStt').textContent=`Stress test: ${i+1}/40 frame...`;
+  stress+=burnCPU(2);
+  await new Promise(r=>requestAnimationFrame(t=>{lTimes.push(t-lLast);lLast=t;r();}));
+ }
+ const lAvg=lTimes.reduce((a,b)=>a+b,0)/lTimes.length;
+ const bDelta=lAvg-bAvg;
+ const n=lTimes.length;
+ const sumX=n*(n-1)/2,sumY=lTimes.reduce((a,b)=>a+b,0);
+ const sumXY=lTimes.reduce((s,v,i)=>s+i*v,0),sumX2=n*(n-1)*(2*n-1)/6;
+ const slope=n*sumXY-sumX*sumY>0?(n*sumXY-sumX*sumY)/(n*sumX2-sumX*sumX):0;
+ $('thLoad').textContent=fmt(lAvg,1);$('thDelta').textContent=(bDelta>0?'+':'')+fmt(bDelta,1);
+ $('thSlope').textContent=fmt(slope,4);
+ let state='Bình thường',cls='var(--gr)';
+ if(slope>0.08||bDelta>20){state='Có khả năng thermal throttle';cls='var(--rd)';}
+ else if(slope>0.03||bDelta>10){state='Máy đang ấm dần';cls='var(--yl)';}
+ $('thStt').innerHTML=`Trạng thái: <b style="color:${cls}">${state}</b>`;
+ $('thBar').style.width=Math.min(100,slope*1000)+'%';$('thBar').style.background=cls;
+ if(slope>0.03||bDelta>10){$('thStt').innerHTML+=`<br><span style="font-size:10px;color:var(--yl)">Gợi ý: Tháo ốp lưng, giảm độ sáng, bật quạt. Profile MDM có thể giảm nhiệt 2-4°C.</span>`;}
+ res.thermal=Math.max(0,100-Math.round(slope*1000));updateScore();
+ btn.textContent='Chạy Thermal Stress Test';btn.disabled=false;
+});
+
+// ========== SCORE ==========
+function updateScore(){
+ const vals=[res.gpu,res.cpu,res.ram,res.net,res.dns,res.thermal];
+ const valid=vals.filter(v=>v>=0);
+ const avg=valid.length>0?Math.round(valid.reduce((a,b)=>a+b,0)/valid.length):0;
+ const el=$('totScore');
+ if(valid.length>0){el.textContent=avg;const c=avg>80?'var(--gr)':avg>50?'var(--yl)':'var(--rd)';el.style.borderColor=c;el.style.color=c;}
+ $('rsGpu').textContent=res.gpu>=0?res.gpu+'/100':'--';$('rsGpu').style.color=res.gpu>=70?'var(--gr)':res.gpu>=40?'var(--yl)':'var(--rd)';
+ $('rsCpu').textContent=res.cpu>=0?res.cpu+'/100':'--';$('rsCpu').style.color=res.cpu>=70?'var(--gr)':res.cpu>=40?'var(--yl)':'var(--rd)';
+ $('rsRam').textContent=res.ram>=0?res.ram+'/100':'--';$('rsRam').style.color=res.ram>=70?'var(--gr)':res.ram>=40?'var(--yl)':'var(--rd)';
+ $('rsNet').textContent=res.net>=0?res.net+'/100':'--';$('rsNet').style.color=res.net>=60?'var(--gr)':res.net>=20?'var(--yl)':'var(--rd)';
+ $('rsDns').textContent=res.dns>=0?res.dns+'/100':'--';$('rsDns').style.color=res.dns>=80?'var(--gr)':'var(--yl)';
+ $('rsThermal').textContent=res.thermal>=0?res.thermal+'/100':'--';$('rsThermal').style.color=res.thermal>=80?'var(--gr)':res.thermal>=50?'var(--yl)':'var(--rd)';
+}
+
+// ========== ALL ==========
+$('allBtn').addEventListener('click',async()=>{
+ const btn=$('allBtn');btn.textContent='Đang chạy toàn bộ benchmark...';btn.disabled=true;
+ document.querySelectorAll('.section').forEach(s=>s.classList.add('active'));
+ // Thermal first
+ $('thStt').textContent='Đang chạy thermal...';await new Promise(r=>setTimeout(r,100));
+ $('thBtn').click();await new Promise(r=>setTimeout(r,5000));
+ // GPU
+ $('gpuBtn').click();await new Promise(r=>setTimeout(r,6000));
+ // CPU + compute
+ $('cpuBtn').click();await new Promise(r=>setTimeout(r,8000));
+ // RAM
+ $('ramBtn').click();
+ // DNS
+ $('dnsBtn').click();await new Promise(r=>setTimeout(r,5000));
+ // NET
+ $('netBtn').click();await new Promise(r=>setTimeout(r,8000));
+ btn.textContent='Chạy TẤT CẢ Benchmark';btn.disabled=false;
+});
+
+// Init canvas background
+const c=$('gpuCanvas');c.width=Math.round(280*(window.devicePixelRatio||1));c.height=Math.round(120*(window.devicePixelRatio||1));
+let gl2;try{gl2=c.getContext('webgl')||c.getContext('experimental-webgl');}catch(e){}
+if(gl2){
+ gl2.clearColor(0.02,0.03,0.05,1);gl2.clear(gl2.COLOR_BUFFER_BIT);
+ gl2.viewport(0,0,c.width,c.height);
+}
+
+})();
+</script>
+</body>
+</html>
