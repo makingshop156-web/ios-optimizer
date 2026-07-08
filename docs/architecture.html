@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kiến trúc Hệ thống — iOS Performance Optimizer</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#060a12;color:#bfcde0;font-family:-apple-system,BlinkMacSystemFont,Georgia,'Times New Roman',serif;padding:24px 14px 60px;max-width:1000px;margin:auto;line-height:1.8;font-size:14px}
+h1{font-size:30px;font-weight:800;color:#ecf3ff;margin:40px 0 4px}
+h2{font-size:21px;font-weight:700;color:#4facfe;margin:36px 0 10px;padding-bottom:6px;border-bottom:1px solid #142038}
+h3{font-size:16px;font-weight:600;color:#b4cae8;margin:20px 0 6px}
+p{margin:6px 0}
+.sub{color:#3a5070;font-size:13px;margin:0 0 24px}
+.cd{background:#0a101c;padding:10px 14px;border-radius:8px;font-family:'SF Mono','Cascadia Code',Consolas,monospace;font-size:11px;overflow-x:auto;margin:6px 0;border:1px solid #142038;line-height:1.5}
+ul,ol{margin:6px 0;padding-left:24px}
+li{margin:3px 0}
+table{width:100%;border-collapse:collapse;margin:8px 0;font-size:12px}
+th,td{padding:5px 8px;text-align:left;border-bottom:1px solid #121c30}
+th{color:#4facfe;font-size:10px;text-transform:uppercase;letter-spacing:.3px}
+.tag{display:inline-block;padding:1px 7px;border-radius:5px;font-size:9px;font-weight:700;background:rgba(79,172,254,.06);color:#4facfe;font-family:monospace;margin:1px}
+.tag.g{background:rgba(0,230,118,.06);color:#00e676}
+.tag.r{background:rgba(255,82,82,.06);color:#ff5252}
+.tag.y{background:rgba(255,221,0,.06);color:#ffd740}
+.nav{position:sticky;top:0;background:#060a12ee;padding:8px 0;z-index:10;border-bottom:1px solid #142038;margin-bottom:16px;display:flex;gap:6px;flex-wrap:wrap;font-size:11px}
+.nav a{color:#8aa8cc;text-decoration:none;padding:2px 8px;border-radius:4px}
+.nav a:hover{color:#4facfe;background:rgba(79,172,254,.06)}
+.diagram{background:#0a101c;padding:20px;border-radius:12px;margin:12px 0;border:1px solid #142038;font-family:monospace;font-size:12px;line-height:1.6;white-space:pre;overflow-x:auto;color:#8aa8cc}
+.diagram .hl{color:#4facfe}
+.diagram .gr{color:#00e676}
+.diagram .yl{color:#ffd740}
+</style>
+</head>
+<body>
+
+<div class="nav">
+<a href="#overview">Tổng quan</a>
+<a href="#backend">Backend</a>
+<a href="#frontend">Frontend</a>
+<a href="#database">Database</a>
+<a href="#api">API Design</a>
+<a href="#ddm">DDM Engine</a>
+<a href="#deploy">Deploy</a>
+<a href="#monitor">Monitoring</a>
+</div>
+
+<h1>Kiến trúc Hệ thống</h1>
+<p class="sub">iOS Performance Optimizer — Thiết kế bởi 10 kỹ sư • Khoa học Máy tính • Production-grade</p>
+
+<div id="overview">
+<h2>1. Tổng quan Kiến trúc</h2>
+<p>Hệ thống được thiết kế theo kiến trúc <strong>microservices</strong> với 6 thành phần chính, vận hành trên nền tảng container hóa Docker. Mỗi thành phần có trách nhiệm riêng biệt, giao tiếp qua REST API và database SQLite centralized.</p>
+
+<div class="diagram">
+┌─────────────────────────────────────────────────────────────────┐
+│                        🧑 NGƯỜI DÙNG                           │
+└───────────────────────────┬─────────────────────────────────────┘
+                            │
+                    ┌───────▼───────┐
+                    │   🌐 NGINX    │  Reverse Proxy + SSL + Rate Limit
+                    │   (Frontend)  │
+                    └───┬───────┬───┘
+                        │       │
+              ┌─────────▼─┐   ┌─▼──────────┐
+              │ 📱 Safari  │   │  📊 Admin   │
+              │ (iOS,HTML) │   │  Dashboard  │
+              └─────┬─────┘   └──────┬──────┘
+                    │                │
+                    └───────┬────────┘
+                            │
+                    ┌───────▼────────┐
+                    │  🚀 Backend    │  Express.js REST API
+                    │  (Node.js 22)  │  Port 3100
+                    └───────┬────────┘
+                            │
+              ┌─────────────┼─────────────┐
+              │             │             │
+        ┌─────▼─────┐ ┌────▼────┐ ┌──────▼──────┐
+        │  SQLite    │ │ Redis   │ │  File System │
+        │  (Primary) │ │ (Cache) │ │ (Profiles)   │
+        └───────────┘ └─────────┘ └─────────────┘
+
+Thành phần:
+  🔹 Frontend:     Nginx serve static + reverse proxy
+  🔹 Backend:      Node.js/Express API Server
+  🔹 Database:     SQLite (WAL mode, zero-config)
+  🔹 Generator:    Core engine sinh profile XML
+  🔹 Benchmark:    WebGL/RAF engine chạy trên Safari
+  🔹 Admin:        Dashboard quản trị + analytics
+</div>
+
+<h3>Công nghệ sử dụng</h3>
+<table>
+<tr><th>Thành phần</th><th>Công nghệ</th><th>Version</th></tr>
+<tr><td>Backend Framework</td><td>Express.js</td><td>4.21+</td></tr>
+<tr><td>Database</td><td>SQLite (better-sqlite3)</td><td>11.3+</td></tr>
+<tr><td>Logging</td><td>Winston</td><td>3.14+</td></tr>
+<tr><td>Validation</td><td>Zod</td><td>3.23+</td></tr>
+<tr><td>Frontend Static</td><td>HTML5 + CSS3 + Vanilla JS</td><td>ES2024</td></tr>
+<tr><td>Container</td><td>Docker</td><td>24+</td></tr>
+<tr><td>Orchestration</td><td>Docker Compose</td><td>2.24+</td></tr>
+<tr><td>CI/CD</td><td>GitHub Actions</td><td>—</td></tr>
+<tr><td>Reverse Proxy</td><td>Nginx</td><td>1.26+</td></tr>
+</table>
+</div>
+
+<div id="backend">
+<h2>2. Backend Architecture</h2>
+
+<h3>2.1 Module Structure</h3>
+<div class="cd">backend/
+├── src/
+│   ├── index.js              # Entry point — Express server init
+│   ├── db.js                 # SQLite connection + migrations + seeds
+│   ├── routes/
+│   │   ├── health.js         # /api/v1/health — Server health check
+│   │   ├── restrictions.js   # /api/v1/restrictions — 36+ daemon keys
+│   │   ├── profiles.js       # /api/v1/profiles — Profile CRUD + download
+│   │   ├── benchmark.js      # /api/v1/benchmark — Submit/query results
+│   │   ├── devices.js        # /api/v1/devices — Device management
+│   │   ├── games.js          # /api/v1/games — Game configs + MCX generation
+│   │   ├── analytics.js      # /api/v1/analytics — Stats, trends, distributions
+│   │   ├── ddm.js            # /api/v1/ddm — DDM declarations + templates
+│   │   └── admin.js          # /api/v1/admin — Admin CRUD (protected)
+│   ├── middleware/
+│   │   ├── logger.js         # Winston logger — file + console
+│   │   └── errorHandler.js   # Global error handler + AppError class
+│   ├── services/             # (extendable) Business logic layer
+│   ├── models/               # (extendable) Data models
+│   └── workers/              # (extendable) Background jobs
+├── config/                   # Environment configs
+├── tests/                    # Unit + integration tests
+└── package.json</div>
+
+<h3>2.2 Request Flow</h3>
+<div class="diagram">
+Client Request
+    │
+    ▼
+Helmet (Security Headers)
+    │
+    ▼
+CORS (Cross-Origin)
+    │
+    ▼
+Compression (gzip)
+    │
+    ▼
+Rate Limiter (100 req/min)
+    │
+    ▼
+Morgan (HTTP Logging)
+    │
+    ▼
+Route Handler
+    │
+    ├── Validation (Zod)
+    ├── Business Logic
+    ├── Database (SQLite)
+    └── Response (JSON)
+    │
+    ▼
+Error Handler (if error)
+    │
+    ▼
+Client Response
+</div>
+
+<h3>2.3 Authentication & Authorization</h3>
+<table>
+<tr><th>Route</th><th>Auth</th><th>Phương thức</th></tr>
+<tr><td>/api/v1/admin/*</td><td>Bearer Token</td><td>Admin token trong header</td></tr>
+<tr><td>/api/v1/benchmark</td><td>Open</td><td>Device ID tự đăng ký</td></tr>
+<tr><td>/api/v1/profiles</td><td>Open</td><td>Read-only public</td></tr>
+<tr><td>/api/v1/devices/:id</td><td>Open</td><td>Device tự quản</td></tr>
+</table>
+</div>
+
+<div id="frontend">
+<h2>3. Frontend Architecture</h2>
+
+<div class="cd">frontend/                           # (Future: React SPA)
+├── src/
+│   ├── components/                # Reusable UI components
+│   ├── pages/                     # Route pages
+│   ├── hooks/                     # React hooks
+│   └── services/                  # API client services
+├── public/                        # Static assets
+└── package.json
+
+Hiện tại (static HTML):
+├── index.html                     # Main dashboard v12
+├── research/index.html            # Research paper (Tiếng Việt)
+├── benchmark/index.html           # Benchmark tool (6 test types)
+├── admin/index.html               # Admin panel
+├── profiles/Performance.mobileconfig  # Generated profile
+└── docs/architecture.html         # This document</div>
+
+<h3>3.1 Frontend Components (Current)</h3>
+<table>
+<tr><th>File</th><th>Chức năng</th><th>Kết nối API</th></tr>
+<tr><td>index.html</td><td>Dashboard chính — terminal, dashboard, benchmark tabs</td><td>Direct (browser APIs)</td></tr>
+<tr><td>benchmark/index.html</td><td>6 loại benchmark — GPU/CPU/RAM/Network/DNS/Thermal</td><td>Browser APIs + Fetch</td></tr>
+<tr><td>admin/index.html</td><td>Admin panel — quản lý devices, profiles, games, DDM</td><td>Backend API + Bearer Auth</td></tr>
+</table>
+</div>
+
+<div id="database">
+<h2>4. Database Schema</h2>
+
+<div class="cd">devices
+├── id (TEXT PK)              — UUID v4
+├── name (TEXT)               — Tên thiết bị
+├── model (TEXT)              — iPhone model (iPhone16,1)
+├── ios_version (TEXT)        — iOS version (18.1, 26.0)
+├── chip (TEXT)               — SoC (A17 Pro)
+├── ram_gb (REAL)             — RAM (GB)
+├── first_seen (TEXT)         — Lần đầu xuất hiện
+├── last_seen (TEXT)          — Lần cuối online
+├── profile_id (TEXT)         — Profile đang dùng
+├── benchmark_count (INT)     — Số benchmark đã chạy
+└── avg_score (REAL)          — Điểm trung bình
+
+benchmark_results
+├── id (TEXT PK)              — UUID v4
+├── device_id (TEXT FK)       — → devices.id
+├── type (TEXT)               — gpu|cpu|ram|net|dns|thermal|full
+├── gpu_score (REAL)          — Điểm GPU 0-100
+├── cpu_score (REAL)          — Điểm CPU 0-100
+├── ram_score (REAL)          — Điểm RAM 0-100
+├── net_score (REAL)          — Điểm Mạng 0-100
+├── dns_score (REAL)          — Điểm DNS 0-100
+├── thermal_score (REAL)      — Điểm Nhiệt 0-100
+├── total_score (REAL)        — Tổng điểm 0-100
+├── details_json (TEXT)       — Chi tiết dạng JSON
+└── created_at (TEXT)         — Thời gian tạo
+
+profiles
+├── id (TEXT PK)              — UUID v4
+├── name (TEXT)               — Tên profile
+├── version (TEXT)            — Version (v12)
+├── description (TEXT)        — Mô tả
+├── payload_count (INT)       — Số payloads
+├── restriction_keys (INT)    — Số keys
+├── games (INT)               — Số game configs
+├── config_json (TEXT)        — Config dạng JSON
+├── download_count (INT)      — Số lượt tải
+├── created_at (TEXT)
+└── updated_at (TEXT)
+
+game_configs
+├── id (TEXT PK)              — UUID v4
+├── name (TEXT)               — Tên game
+├── bundle_id (TEXT)          — Bundle ID iOS
+├── preferences_json (TEXT)   — Managed preferences keys
+├── benchmark_ref_gpu (REAL)  — GPU reference score
+├── benchmark_ref_cpu (REAL)  — CPU reference score
+└── created_at (TEXT)
+
+ddm_declarations
+├── id (TEXT PK)
+├── name (TEXT)
+├── type (TEXT)               — Configuration type
+├── declaration_json (TEXT)   — Declarative payload
+├── predicates_json (TEXT)    — Conditions
+├── activations_json (TEXT)   — Activation rules
+├── ios_version (TEXT)        — iOS requirement
+└── created_at (TEXT)
+
+Restriction Logs + Analytics Events (audit trail)
+</div>
+
+<h3>4.1 Indexes & Performance</h3>
+<ul>
+<li><code>idx_benchmark_device</code> — Truy vấn benchmark theo device nhanh</li>
+<li><code>idx_benchmark_created</code> — Sort theo thời gian</li>
+<li><code>idx_devices_last_seen</code> — Device active status</li>
+<li>WAL mode — Concurrent read/write không block</li>
+</ul>
+</div>
+
+<div id="api">
+<h2>5. API Design</h2>
+
+<h3>5.1 RESTful Endpoints</h3>
+<table>
+<tr><th>Method</th><th>Endpoint</th><th>Mô tả</th></tr>
+<tr><td><span class="tag">GET</span></td><td>/api/v1/health</td><td>Server health + thống kê</td></tr>
+<tr><td><span class="tag">GET</span></td><td>/api/v1/restrictions</td><td>Danh sách keys (query: ?group=,?gaming=)</td></tr>
+<tr><td><span class="tag">GET</span></td><td>/api/v1/restrictions/analysis/summary</td><td>Phân tích CPU/RAM tiết kiệm</td></tr>
+<tr><td><span class="tag">GET</span></td><td>/api/v1/profiles</td><td>Danh sách profiles</td></tr>
+<tr><td><span class="tag">POST</span></td><td>/api/v1/profiles</td><td>Tạo profile mới</td></tr>
+<tr><td><span class="tag">POST</span></td><td>/api/v1/profiles/:id/download</td><td>Tăng download count</td></tr>
+<tr><td><span class="tag">POST</span></td><td>/api/v1/benchmark</td><td>Gửi kết quả benchmark</td></tr>
+<tr><td><span class="tag">GET</span></td><td>/api/v1/benchmark/:deviceId</td><td>Lịch sử benchmark</td></tr>
+<tr><td><span class="tag">GET</span></td><td>/api/v1/benchmark/:deviceId/latest</td><td>Kết quả mới nhất</td></tr>
+<tr><td><span class="tag">GET</span></td><td>/api/v1/benchmark/:deviceId/trend</td><td>Xu hướng điểm theo thời gian</td></tr>
+<tr><td><span class="tag">GET</span></td><td>/api/v1/devices</td><td>Danh sách devices</td></tr>
+<tr><td><span class="tag">GET|PUT</span></td><td>/api/v1/devices/:id</td><td>Lấy/Cập nhật device</td></tr>
+<tr><td><span class="tag">DELETE</span></td><td>/api/v1/devices/:id</td><td>Xóa device + benchmark data</td></tr>
+<tr><td><span class="tag">GET</span></td><td>/api/v1/games</td><td>Danh sách game configs</td></tr>
+<tr><td><span class="tag">PUT</span></td><td>/api/v1/games/:id</td><td>Cập nhật game preferences</td></tr>
+<tr><td><span class="tag">POST</span></td><td>/api/v1/games/:id/apply</td><td>Sinh MCX payload cho game</td></tr>
+<tr><td><span class="tag">GET</span></td><td>/api/v1/ddm</td><td>DDM declarations + types</td></tr>
+<tr><td><span class="tag">GET</span></td><td>/api/v1/ddm/comparison</td><td>MDM vs DDM comparison</td></tr>
+<tr><td><span class="tag">GET</span></td><td>/api/v1/ddm/template/gaming</td><td>Template gaming optimization</td></tr>
+<tr><td><span class="tag">POST</span></td><td>/api/v1/ddm/generate</td><td>Sinh DDM declaration</td></tr>
+<tr><td><span class="tag">GET</span></td><td>/api/v1/analytics/overview</td><td>Dashboard tổng quan</td></tr>
+<tr><td><span class="tag">GET</span></td><td>/api/v1/analytics/daily</td><td>Daily trend 30 ngày</td></tr>
+<tr><td><span class="tag">GET</span></td><td>/api/v1/analytics/by-device</td><td>Top devices</td></tr>
+<tr><td><span class="tag">GET</span></td><td>/api/v1/analytics/scores/distribution</td><td>Phân phối điểm</td></tr>
+</table>
+
+<h3>5.2 Response Format</h3>
+<div class="cd">// Success
+{
+  "status": "healthy",
+  "version": "1.0.0",
+  "timestamp": "2026-07-08T11:09:42.000Z",
+  "stats": { "devices": 5, "benchmarks": 42, "profiles": 1 }
+}
+
+// Error
+{
+  "error": "not_found",
+  "message": "Device not found"
+}
+
+// Pagination
+{
+  "total": 100,
+  "offset": 0,
+  "limit": 20,
+  "results": [...]
+}</div>
+</div>
+
+<div id="ddm">
+<h2>6. DDM Engine — Declarative Device Management</h2>
+
+<p>DDM Engine là module chuyên biệt cho iOS 27+ Declarative Device Management. Nó sinh các JSON declarations với conditional activations.</p>
+
+<h3>6.1 DDM Declaration Types</h3>
+<table>
+<tr><th>Type</th><th>Mô tả</th><th>MDM tương đương</th></tr>
+<tr><td>com.apple.configuration.applicationaccess</td><td>Restriction keys (declarative)</td><td>Restrictions payload</td></tr>
+<tr><td>com.apple.configuration.managed.preferences</td><td>Managed preferences</td><td>MCX payload</td></tr>
+<tr><td>com.apple.configuration.passcode</td><td>Passcode policy</td><td>allowPasscodeModification</td></tr>
+<tr><td>com.apple.configuration.app.management</td><td>App management</td><td>InstallApplication</td></tr>
+<tr><td>com.apple.configuration.network.dns</td><td>DNS settings</td><td>DNS Settings payload</td></tr>
+</table>
+
+<h3>6.2 Activation Predicates</h3>
+<table>
+<tr><th>Predicate</th><th>Tham số</th><th>Ứng dụng</th></tr>
+<tr><td>com.apple.condition.app</td><td>bundleIds: string[]</td><td>Chỉ active khi chơi game</td></tr>
+<tr><td>com.apple.condition.time</td><td>from: HH:mm, to: HH:mm</td><td>Chế độ ban đêm</td></tr>
+<tr><td>com.apple.condition.battery</td><td>level: number, operator: string</td><td>Tiết kiệm pin khi yếu</td></tr>
+<tr><td>com.apple.condition.thermal</td><td>state: string</td><td>Tăng restriction khi nóng</td></tr>
+<tr><td>com.apple.condition.network</td><td>type: string</td><td>Chặn sync trên cellular</td></tr>
+</table>
+</div>
+
+<div id="deploy">
+<h2>7. Deployment Architecture</h2>
+
+<h3>7.1 Docker Compose (Production)</h3>
+<div class="cd">services:
+  backend   → Node.js 22, Express, SQLite
+  frontend  → Nginx reverse proxy + static files
+  backup    → SQLite backup định kỳ (hàng ngày)
+  monitor   → Glances system monitoring
+
+Networks: iosperf-net (bridge)
+Volumes:  backend-data (persistent), backend-logs
+Ports:    3100 (API), 80/443 (Web), 61208 (Monitor)</div>
+
+<h3>7.2 CI/CD Pipeline (GitHub Actions)</h3>
+<div class="cd">Jobs:
+  1. lint          → ESLint
+  2. test          → Node --test
+  3. profile-val   → Validate mobileconfig XML
+  4. build         → Docker build + push to GHCR
+  5. deploy        → SSH deploy to production (on release)
+  6. pages         → Deploy to GitHub Pages</div>
+
+<h3>7.3 Production Requirements</h3>
+<ul>
+<li><strong>CPU:</strong> 2 cores (4 recommended)</li>
+<li><strong>RAM:</strong> 2 GB (4 GB recommended)</li>
+<li><strong>Storage:</strong> 20 GB SSD</li>
+<li><strong>OS:</strong> Ubuntu 22.04+ / Debian 12+</li>
+<li><strong>Dependencies:</strong> Docker 24+, Docker Compose 2.24+, Nginx</li>
+<li><strong>SSL:</strong> Let's Encrypt (certbot) hoặc SSL từ CDN</li>
+</ul>
+</div>
+
+<div id="monitor">
+<h2>8. Monitoring & Observability</h2>
+
+<h3>8.1 Logging</h3>
+<table>
+<tr><th>Loại</th><th>Destination</th><th>Format</th></tr>
+<tr><td>HTTP Access</td><td>Morgan → Winston</td><td>Combined Apache format</td></tr>
+<tr><td>Application</td><td>Winston (file + console)</td><td>Timestamp [LEVEL] message</td></tr>
+<tr><td>Errors</td><td>logs/error.log</td><td>Stack trace included</td></tr>
+<tr><td>Combined</td><td>logs/combined.log</td><td>All levels</td></tr>
+</table>
+
+<h3>8.2 Health Checks</h3>
+<ul>
+<li><strong>Backend:</strong> GET /api/v1/health — returns DB stats, uptime</li>
+<li><strong>Docker:</strong> HEALTHCHECK every 30s — wget to health endpoint</li>
+<li><strong>Database:</strong> WAL checkpoint auto, daily backup via cron</li>
+</ul>
+
+<h3>8.3 Backup Strategy</h3>
+<ul>
+<li><strong>Daily:</strong> SQLite database backup (docker backup service)</li>
+<li><strong>Retention:</strong> 30 days</li>
+<li><strong>Restore:</strong> Copy backup file to data volume, restart container</li>
+</ul>
+
+<h3>8.4 Alerting (Recommended)</h3>
+<ul>
+<li><strong>Uptime:</strong> Better Uptime / UptimeRobot — check health endpoint mỗi 5 phút</li>
+<li><strong>Error rate:</strong> Winston error log → Sentry / Datadog</li>
+<li><strong>Disk usage:</strong> 80% threshold → email alert</li>
+</ul>
+</div>
+
+<ft style="display:block;text-align:center;padding:30px 0 20px;font-size:10px;color:#2a3a50;border-top:1px solid #121c30;margin-top:40px">
+iOS Performance Optimizer — Kiến trúc Hệ thống • 10 kỹ sư • Production-grade<br>
+Backend: Node.js/Express + SQLite • Frontend: HTML5/CSS3/JS • CI/CD: GitHub Actions • Container: Docker
+</ft>
+
+</body>
+</html>
