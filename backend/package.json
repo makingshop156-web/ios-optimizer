@@ -1,0 +1,26 @@
+{
+  "name": "ios-perf-backend",
+  "version": "1.0.0",
+  "description": "iOS Performance Optimizer — Backend API Server",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "node --test tests/*.test.js",
+    "db:migrate": "node src/db.js migrate",
+    "db:seed": "node src/db.js seed",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "better-sqlite3": "^11.3.0",
+    "cors": "^2.8.5",
+    "morgan": "^1.10.0",
+    "uuid": "^10.0.0",
+    "compression": "^1.7.4",
+    "helmet": "^8.0.0",
+    "express-rate-limit": "^7.4.0",
+    "zod": "^3.23.0",
+    "winston": "^3.14.0"
+  }
+}
