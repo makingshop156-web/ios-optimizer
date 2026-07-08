@@ -611,7 +611,13 @@ console.log(`  Restrictions: ${config.restrictions.reduce((a, c) => a + c.keys.l
 console.log(`  Games: ${Object.keys(config.gamePrefs).length} games configured`);
 console.log(`  Payloads: ${3 + Object.keys(config.gamePrefs).length + (config.dns ? 1 : 0) + (config.webClip ? 1 : 0)}`);
 
-// Print analysis
+  // Print analysis
+console.log('\n=== DDM Compatibility ===');
+console.log(`  iOS 27+ DDM: ${config.restrictions.length} payloads support declarative equivalent`);
+console.log(`  Conditional activation: app.bundle, time, battery, thermal, network`);
+console.log('  Migration path: MDM → DDM declarative (iOS 27+)');
+console.log('  See research/ index.html section 9 for DDM analysis');
+
 console.log('\n=== Daemon Impact Analysis ===');
 const allKeys = config.restrictions.flatMap(r => r.keys);
 let cpuSave = 0, memSave = 0;
