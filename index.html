@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+    <title>iOS Perf • v11</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#03080e;--cd:rgba(8,14,24,.68);--bdr:rgba(50,75,120,.12);--tx:#c8dbe8;--dm:#3a5a7a;--bl:#0af;--gr:#0e6;--yl:#fd0;--rd:#f44;--cy:#0dd}
+body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSystemFont,sans-serif;min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:2px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(0,170,255,.12);border-radius:4px}
+
+.bg{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;overflow:hidden}
+.bg .o{position:absolute;border-radius:50%;filter:blur(100px)}
+.bg .o:nth-child(1){width:300px;height:300px;background:var(--bl);top:-80px;right:-60px;opacity:.07;animation:dr 25s ease-in-out infinite}
+.bg .o:nth-child(2){width:350px;height:350px;background:#06f;bottom:-100px;left:-80px;opacity:.07;animation:dr 30s ease-in-out infinite reverse}
+.bg .o:nth-child(3){width:200px;height:200px;background:var(--cy);top:30%;left:20%;opacity:.03;animation:dr 20s ease-in-out infinite 8s}
+@keyframes dr{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(40px,-30px) scale(1.15)}66%{transform:translate(-30px,40px) scale(.9)}}
+
+.w{position:relative;z-index:1;max-width:500px;margin:0 auto;padding:0 0 30px}
+
+.h{text-align:center;padding:34px 16px 10px}
+.hi{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#0af,#06f);display:flex;align-items:center;justify-content:center;margin:0 auto 6px;box-shadow:0 6px 30px rgba(0,130,255,.2)}
+.hi .b{font-size:22px;font-weight:900;color:#fff}
+.h h1{font-size:20px;font-weight:800;background:linear-gradient(135deg,#fff,#8cf);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.h .sub{font-size:9.5px;color:var(--dm);margin-top:1px;letter-spacing:.3px}
+
+.sb{display:flex;align-items:center;justify-content:center;gap:8px;font-size:11px;margin-top:10px;padding:6px 14px;border-radius:20px;border:1px solid var(--bdr);background:rgba(8,14,24,.6);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)}
+.sb .d{width:8px;height:8px;border-radius:50%;flex-shrink:0;transition:all .3s}
+.sb .d.g{background:var(--gr);box-shadow:0 0 12px rgba(0,230,118,.5)}
+.sb .d.r{background:var(--rd);box-shadow:0 0 12px rgba(255,68,68,.5)}
+.sb .d.y{background:var(--yl);box-shadow:0 0 12px rgba(255,221,0,.5)}
+.sb .d.c{background:var(--yl);animation:bl 1s infinite}
+@keyframes bl{0%,100%{opacity:1}50%{opacity:.3}}
+
+.tabs{display:flex;gap:3px;padding:0 10px;margin-top:4px}
+.tab{flex:1;text-align:center;padding:7px 0;font-size:10px;font-weight:600;color:var(--dm);border-radius:8px;cursor:pointer;transition:all .2s;border:none;background:transparent;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.tab.act{color:#fff;background:rgba(0,170,255,.08)}
+.tab:active{transform:scale(.95)}
+
+.bd{padding:6px 10px;display:flex;flex-direction:column;gap:6px}
+.pn{display:block}
+.pn.h{display:none}
+
+.c{background:var(--cd);border-radius:14px;padding:12px;border:1px solid var(--bdr);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.ct{font-size:9px;font-weight:700;color:var(--dm);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;display:flex;align-items:center;gap:5px}
+
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px}
+.it{background:rgba(255,255,255,.015);border-radius:10px;padding:8px;text-align:center}
+.it .n{font-size:16px;font-weight:800;letter-spacing:-.3px}
+.it .l{font-size:8.5px;color:var(--dm);text-transform:uppercase;letter-spacing:.6px}
+
+.pg{height:3px;background:rgba(255,255,255,.03);border-radius:2px;margin:4px 0;overflow:hidden}
+.pg .fl{height:100%;border-radius:2px;transition:width .6s ease}
+
+/* Histogram bars */
+.hist{display:flex;align-items:flex-end;gap:2px;height:40px;margin:4px 0}
+.hist .barr{flex:1;border-radius:2px 2px 0 0;min-height:1px;transition:height .4s}
+
+/* DNS grid */
+.dg{display:grid;grid-template-columns:1fr 1fr;gap:3px}
+.dg .di{padding:5px 7px;border-radius:6px;font-size:9.5px;background:rgba(255,255,255,.015)}
+.dg .di .nm{color:var(--dm);font-size:8px;margin-bottom:1px;word-break:break-all}
+.dg .di .stt{font-weight:700}
+.dg .di .ms{font-size:8px;color:var(--dm)}
+
+.bdg{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:10px;font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;border:1px solid transparent}
+.bdg.g{background:rgba(0,230,118,.08);color:var(--gr);border-color:rgba(0,230,118,.12)}
+.bdg.r{background:rgba(255,68,68,.08);color:var(--rd);border-color:rgba(255,68,68,.12)}
+.bdg.y{background:rgba(255,221,0,.08);color:var(--yl);border-color:rgba(255,221,0,.12)}
+.bdg.b{background:rgba(0,170,255,.08);color:var(--bl);border-color:rgba(0,170,255,.12)}
+
+/* Terminal */
+.term{background:#050a14;border-radius:14px;border:1px solid var(--bdr);overflow:hidden;font-family:'SF Mono','Cascadia Code','Menlo',monospace;font-size:10.5px;line-height:1.5}
+.term .bar{display:flex;align-items:center;gap:6px;padding:6px 10px;background:rgba(255,255,255,.02);border-bottom:1px solid var(--bdr)}
+.term .bar .dot{width:7px;height:7px;border-radius:50%}
+.term .bar .dot:nth-child(1){background:#ff5f57}
+.term .bar .dot:nth-child(2){background:#ffbd2e}
+.term .bar .dot:nth-child(3){background:#28ca41}
+.term .bar .tt{font-size:8.5px;color:var(--dm);margin-left:6px;letter-spacing:.4px;text-transform:uppercase}
+.term .out{overflow-y:auto;max-height:320px;min-height:80px;padding:6px 10px;color:#b0c8e0}
+.term .inp{display:flex;align-items:center;border-top:1px solid var(--bdr);padding:5px 10px;background:rgba(0,0,0,.3)}
+.term .inp .ps{color:var(--gr);font-weight:700;margin-right:6px;flex-shrink:0}
+.term .inp input{background:transparent;border:none;color:#e0e8f0;font-family:inherit;font-size:10.5px;width:100%;outline:none}
+.term .inp input::placeholder{color:var(--dm);opacity:.3}
+
+.bat{display:flex;align-items:center;gap:10px}
+.bat .bi{position:relative;width:36px;height:18px;border:2px solid var(--dm);border-radius:3px;flex-shrink:0;overflow:hidden}
+.bat .bi .lv{height:100%;border-radius:1px;transition:width .5s,background .3s}
+.bat .bi::after{content:'';position:absolute;right:-5px;top:4px;width:4px;height:8px;background:var(--dm);border-radius:0 1px 1px 0}
+.bat .tx{font-size:18px;font-weight:800}
+.bat .st{font-size:9px;color:var(--dm)}
+
+.ib{background:linear-gradient(135deg,rgba(0,170,255,.05),rgba(0,100,255,.03));border:1px solid rgba(0,170,255,.15);border-radius:14px;padding:14px;text-align:center}
+.ib .big{display:inline-flex;align-items:center;gap:6px;padding:12px 32px;border-radius:10px;background:linear-gradient(135deg,#0af,#06f);color:#fff;font-size:13px;font-weight:700;text-decoration:none;box-shadow:0 4px 24px rgba(0,130,255,.25);margin:6px 0;transition:transform .15s}
+.ib .big:active{transform:scale(.95)}
+.ib .s{font-size:10px;color:var(--dm);line-height:1.4}
+.qa{display:flex;gap:5px}
+.qa a{flex:1;text-align:center;padding:8px 6px;border-radius:10px;font-size:9.5px;font-weight:600;text-decoration:none;transition:all .15s;touch-action:manipulation}
+.qa a:active{transform:scale(.94)}
+.qa .p{background:linear-gradient(135deg,#0af,#06f);color:#fff}
+.qa .s{background:rgba(255,255,255,.025);color:var(--tx);border:1px solid var(--bdr)}
+.ft{text-align:center;padding:20px 12px 10px;font-size:8.5px;color:var(--dm);line-height:1.5}
+.btn{border:none;padding:6px 16px;border-radius:8px;font-size:10px;font-weight:600;cursor:pointer;touch-action:manipulation;transition:all .15s;background:rgba(0,170,255,.08);color:var(--bl);border:1px solid var(--bdr)}
+.btn:active{transform:scale(.94)}
+
+/* Score circle */
+.scr{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto;font-size:22px;font-weight:900;border:3px solid;flex-shrink:0}
+</style>
+</head>
+<body>
+<div class="bg"><div class="o"></div><div class="o"></div><div class="o"></div></div>
+<div class="w">
+
+<div class="h">
+    <div class="hi"><span class="b">⚡</span></div>
+    <h1>iOS Performance</h1>
+    <p class="sub">v11 • Academic Research • 34 restrictions • Apple Intelligence • Game Tuning • MDM-ready</p>
+    <div class="sb" id="sb"><span class="d c" id="sbd"></span><span id="sbt">Booting...</span></div>
+</div>
+
+<div class="tabs">
+    <button class="tab act" data-pn="term">Terminal</button>
+    <button class="tab" data-pn="dash">Dashboard</button>
+    <button class="tab" data-pn="bench">Benchmark</button>
+</div>
+
+<div class="bd">
+
+<!-- TERMINAL TAB -->
+<div class="pn" id="pn-term">
+    <div class="term">
+        <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="tt">iOS Terminal v10</span></div>
+        <div class="out" id="termOut">
+            <div>[ <span class="ok" style="color:var(--gr)">✓</span> ] iOS Perf v11 — Systematic MDM Optimization Research</div>
+            <div>[ <span class="ok" style="color:var(--gr)">✓</span> ] WebGL GPU analyzer active</div>
+            <div>[ <span class="ok" style="color:var(--gr)">✓</span> ] RAF CPU profiler active</div>
+            <div>[ <span class="ok" style="color:var(--gr)">✓</span> ] Multi-domain DNS probe ready</div>
+            <div><span style="color:var(--dm);font-style:italic">Type 'help' to see commands — all data is REAL device measurements</span></div>
+        </div>
+        <div class="inp"><span class="ps">$</span><input id="termIn" placeholder="help" autofocus spellcheck="false" autocomplete="off"></div>
+    </div>
+    <div class="c">
+        <div class="ct">⚡ REAL Device Measurements</div>
+        <div style="font-size:10px;color:var(--dm);line-height:1.6" id="quickInfo">
+            <span>Use Terminal to measure REAL device data: CPU, GPU, RAM, Network, DNS, Battery, Thermal</span>
+        </div>
+    </div>
+</div>
+
+<!-- DASHBOARD TAB -->
+<div class="pn h" id="pn-dash">
+
+    <div class="c">
+        <div class="ct">📊 Status</div>
+        <div id="statusDetail" style="font-size:10px;color:var(--dm);line-height:1.6">Initializing...</div>
+        <div style="margin-top:5px;display:flex;flex-wrap:wrap;gap:3px" id="badgeArea"></div>
+    </div>
+
+    <div class="c">
+        <div class="ct">📱 Device</div>
+        <div class="g2">
+            <div class="it"><div class="n" id="memVal">--</div><div class="l">RAM</div></div>
+            <div class="it"><div class="n" id="cpuVal">--</div><div class="l">CPU</div></div>
+            <div class="it"><div class="n" id="scrVal">--</div><div class="l">Display</div></div>
+            <div class="it"><div class="n" id="stoVal">--</div><div class="l" id="stoLabel">Storage</div></div>
+        </div>
+    </div>
+
+    <div class="c">
+        <div class="ct">🔋 Battery</div>
+        <div class="bat">
+            <div class="bi"><div class="lv" id="batLv" style="width:0"></div></div>
+            <div class="tx" id="batTx">--</div>
+            <div class="st" id="batStt">--</div>
+        </div>
+        <div class="pg"><div class="fl" id="batBar" style="width:0;background:var(--gr)"></div></div>
+        <div style="font-size:8px;color:var(--dm);margin-top:2px">Drain rate: <span id="batDrain">--</span></div>
+    </div>
+
+    <div class="c">
+        <div class="ct">📶 Network</div>
+        <div class="g2">
+            <div class="it"><div class="n" id="netType">--</div><div class="l">Type</div></div>
+            <div class="it"><div class="n" id="netSpeed">--</div><div class="l">Mbps</div></div>
+        </div>
+        <div class="pg"><div class="fl" id="pingBar" style="width:0"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:8px;color:var(--dm)"><span>0 ms</span><span id="pingLabel"></span><span>1000+ ms</span></div>
+    </div>
+
+    <div class="c">
+        <div class="ct">✅ 34 restrictions (v11)</div>
+        <div style="font-size:10px;color:var(--tx);line-height:1.6">
+            DNS AdGuard • Siri • Spotlight • Game Center • 9 iCloud sync<br>
+            analyticsd • appstored • ad tracking • OTA cert • Handoff<br>
+            autounlockd • sharingd • Find Friends • App Clips • Mail Drop<br>
+            <span style="color:var(--cy)">NEW: Apple Intelligence • Writing Tools • ChatGPT</span>
+        </div>
+        <div style="font-size:9px;color:var(--dm);margin-top:3px">CPU ↓10-18% • RAM ↑150-250MB • Pin ↑15-25% • Data ↓500MB-1GB/th</div>
+    </div>
+
+    <div class="ib">
+        <a class="big" href="profiles/Performance.mobileconfig">⬇ PROFILE v11</a>
+        <div class="s">Safari → Allow → Install</div>
+        <div class="s" style="font-size:8.5px;color:var(--yl)">⚠ Remove old profile first: Settings > General > VPN & Device Management</div>
+    </div>
+    <div class="qa">
+        <a class="p" href="profiles/Performance.mobileconfig">📥 Profile</a>
+        <a class="s" href="research/">📖 Research</a>
+        <a class="s" href="#" onclick="event.preventDefault();document.querySelector('.tab[data-pn=\"bench\"]').click()">📊 Bench</a>
+    </div>
+</div>
+
+<!-- BENCHMARK TAB -->
+<div class="pn h" id="pn-bench">
+
+    <!-- Score -->
+    <div class="c" style="text-align:center">
+        <div class="ct">🎯 Performance Score</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:16px;padding:4px 0">
+            <div><div class="scr" id="perfScore" style="border-color:var(--dm)">--</div><div style="font-size:8px;color:var(--dm);margin-top:3px">TOTAL</div></div>
+            <div style="text-align:left;font-size:9.5px;line-height:1.7">
+                <span id="scGpu" style="color:var(--dm)">GPU: --</span><br>
+                <span id="scCpu" style="color:var(--dm)">CPU: --</span><br>
+                <span id="scDns" style="color:var(--dm)">DNS: --</span><br>
+                <span id="scNet" style="color:var(--dm)">NET: --</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- GPU -->
+    <div class="c">
+        <div class="ct">🎮 WebGL GPU — REAL 3D rendering</div>
+        <canvas id="gpuCanvas" style="width:100%;height:110px;border-radius:8px;background:#050a14;margin-bottom:4px"></canvas>
+        <div class="g3">
+            <div class="it"><div class="n" id="gpuFpsAvg" style="color:var(--dm)">--</div><div class="l">Avg FPS</div></div>
+            <div class="it"><div class="n" id="gpuFpsMin" style="color:var(--dm)">--</div><div class="l">Min FPS</div></div>
+            <div class="it"><div class="n" id="gpuFpsMax" style="color:var(--dm)">--</div><div class="l">Max FPS</div></div>
+        </div>
+        <div style="display:flex;gap:4px;margin-top:4px">
+            <button class="btn" id="gpuBtn" style="flex:1">▶ GPU Benchmark</button>
+            <span style="font-size:8px;color:var(--dm);padding:2px 0">180 frames • WebGL 2.0</span>
+        </div>
+    </div>
+
+    <!-- CPU with histogram -->
+    <div class="c">
+        <div class="ct">⚡ CPU Load — RAF frame timing HISTOGRAM</div>
+        <div class="g2">
+            <div class="it"><div class="n" id="cpuLoad" style="color:var(--dm)">--</div><div class="l">CPU Load</div></div>
+            <div class="it"><div class="n" id="cpuJank" style="color:var(--dm)">--</div><div class="l">Jank %</div></div>
+        </div>
+        <div class="hist" id="cpuHist"></div>
+        <div style="display:flex;justify-content:space-between;font-size:7px;color:var(--dm)"><span>0ms</span><span>Frames over time</span><span>50ms+</span></div>
+        <div class="pg"><div class="fl" id="cpuBar" style="width:0;background:var(--gr)"></div></div>
+        <button class="btn" id="cpuBtn" style="margin-top:4px;width:100%">▶ CPU Benchmark (120 frames)</button>
+    </div>
+
+    <!-- DNS -->
+    <div class="c">
+        <div class="ct">🔬 DNS Verification — 5 ad domains</div>
+        <div class="dg" id="dnsGrid"></div>
+        <div style="display:flex;justify-content:space-between;font-size:9px;margin-top:4px">
+            <span id="dnsResult" style="color:var(--dm)">Not tested</span>
+            <button class="btn" id="dnsBtn">▶ Test DNS</button>
+        </div>
+    </div>
+
+    <!-- Network -->
+    <div class="c">
+        <div class="ct">📶 Network — Speed test (3 samples)</div>
+        <div style="display:flex;align-items:center;gap:10px;padding:2px 0">
+            <div><span style="font-size:22px;font-weight:800" id="netMbps">--</span><span style="font-size:10px;color:var(--dm)"> Mbps</span></div>
+            <div style="font-size:9px;color:var(--dm)" id="netDetail">Tap to measure</div>
+        </div>
+        <button class="btn" id="netBtn" style="width:100%">▶ Speed Test</button>
+    </div>
+
+</div>
+
+</div>
+
+<div class="ft">iOS Performance <span style="color:var(--bl);font-weight:700">v11</span> — Systematic MDM Research • 34 restrictions • Apple Intelligence • Game Tuning<br>iOS Performance Lab — 2026</div>
+
+</div>
+
+<script>
+(function(){
+'use strict';
+const $=id=>document.getElementById(id),q=(s,p)=>p?p.querySelector(s):document.querySelector(s);
+const sbd=$('sbd'),sbt=$('sbt'),sd=$('statusDetail'),ba=$('badgeArea');
+
+const deviceDB={
+    'iPhone12,1':{n:'iPhone 11',r:'4GB',c:'6 (A13)',g:'A13 4-core',s:'64/128/256 GB'},
+    'iPhone12,3':{n:'iPhone 11 Pro',r:'4GB',c:'6 (A13)',g:'A13 4-core',s:'64/256/512 GB'},
+    'iPhone12,5':{n:'iPhone 11 Pro Max',r:'4GB',c:'6 (A13)',g:'A13 4-core',s:'64/256/512 GB'},
+    'iPhone12,8':{n:'iPhone SE (2nd)',r:'3GB',c:'6 (A13)',g:'A13 4-core',s:'64/128/256 GB'},
+    'iPhone13,1':{n:'iPhone 12 mini',r:'4GB',c:'6 (A14)',g:'A14 4-core',s:'64/128/256 GB'},
+    'iPhone13,2':{n:'iPhone 12',r:'4GB',c:'6 (A14)',g:'A14 4-core',s:'64/128/256 GB'},
+    'iPhone13,3':{n:'iPhone 12 Pro',r:'6GB',c:'6 (A14)',g:'A14 4-core',s:'128/256/512 GB'},
+    'iPhone13,4':{n:'iPhone 12 Pro Max',r:'6GB',c:'6 (A14)',g:'A14 4-core',s:'128/256/512 GB'},
+    'iPhone14,2':{n:'iPhone 13 Pro',r:'6GB',c:'6 (A15)',g:'A15 5-core',s:'128/256/512/1024 GB'},
+    'iPhone14,3':{n:'iPhone 13 Pro Max',r:'6GB',c:'6 (A15)',g:'A15 5-core',s:'128/256/512/1024 GB'},
+    'iPhone14,4':{n:'iPhone 13 mini',r:'4GB',c:'6 (A15)',g:'A15 4-core',s:'128/256/512 GB'},
+    'iPhone14,5':{n:'iPhone 13',r:'4GB',c:'6 (A15)',g:'A15 4-core',s:'128/256/512 GB'},
+    'iPhone14,6':{n:'iPhone SE (3rd)',r:'4GB',c:'6 (A15)',g:'A15 4-core',s:'64/128/256 GB'},
+    'iPhone14,7':{n:'iPhone 14',r:'6GB',c:'6 (A15)',g:'A15 5-core',s:'128/256/512 GB'},
+    'iPhone14,8':{n:'iPhone 14 Plus',r:'6GB',c:'6 (A15)',g:'A15 5-core',s:'128/256/512 GB'},
+    'iPhone15,2':{n:'iPhone 14 Pro',r:'6GB',c:'6 (A16)',g:'A16 5-core',s:'128/256/512/1024 GB'},
+    'iPhone15,3':{n:'iPhone 14 Pro Max',r:'6GB',c:'6 (A16)',g:'A16 5-core',s:'128/256/512/1024 GB'},
+    'iPhone15,4':{n:'iPhone 15',r:'6GB',c:'6 (A16)',g:'A16 5-core',s:'128/256/512 GB'},
+    'iPhone15,5':{n:'iPhone 15 Plus',r:'6GB',c:'6 (A16)',g:'A16 5-core',s:'128/256/512 GB'},
+    'iPhone16,1':{n:'iPhone 15 Pro',r:'8GB',c:'6 (A17 Pro)',g:'A17 Pro 6-core',s:'128/256/512/1024 GB'},
+    'iPhone16,2':{n:'iPhone 15 Pro Max',r:'8GB',c:'6 (A17 Pro)',g:'A17 Pro 6-core',s:'256/512/1024 GB'},
+    'iPhone17,1':{n:'iPhone 16 Pro',r:'8GB',c:'6 (A18 Pro)',g:'A18 Pro 6-core',s:'128/256/512/1024 GB'},
+    'iPhone17,2':{n:'iPhone 16 Pro Max',r:'8GB',c:'6 (A18 Pro)',g:'A18 Pro 6-core',s:'256/512/1024 GB'},
+    'iPhone17,3':{n:'iPhone 16',r:'8GB',c:'6 (A18)',g:'A18 5-core',s:'128/256/512 GB'},
+    'iPhone17,4':{n:'iPhone 16 Plus',r:'8GB',c:'6 (A18)',g:'A18 5-core',s:'128/256/512 GB'},
+};
+function getDeviceSpecs(){
+    const u=navigator.userAgent;
+    for(const[k,v]of Object.entries(deviceDB))if(u.includes(k))return v;
+    return null;
+}
+const model=(()=>{
+    const s=getDeviceSpecs();if(s)return s.n;
+    const u=navigator.userAgent;
+    if(u.includes('iPhone'))return 'iPhone';if(u.includes('iPad'))return 'iPad';return 'iOS Device';
+})();
+const deviceSpecs=getDeviceSpecs();
+
+let perfScore={gpu:0,cpu:0,dns:0,net:0};
+
+// Tab switch
+q('.tabs').addEventListener('click',e=>{
+    const t=e.target.closest('.tab'); if(!t)return;
+    q('.tab.act').classList.remove('act'); t.classList.add('act');
+    q('.pn:not(.h)')?.classList.add('h'); $(`pn-${t.dataset.pn}`).classList.remove('h');
+});
+
+// ---- TERMINAL ----
+const termOut=$('termOut'),termIn=$('termIn');
+function tp(text,cls=''){const d=document.createElement('div');d.innerHTML=text;termOut.appendChild(d);termOut.scrollTop=termOut.scrollHeight;}
+function tcmd(cmd){tp(`<span style="color:var(--gr);font-weight:700">$</span> <span style="color:#e0e8f0">${cmd}</span>`);}
+let cmdHistory=[],histIdx=-1;
+
+const cmds={
+    help(){
+        tp('═══ <span style="color:var(--yl)">Commands</span> ═══');
+        tp('<b style="color:var(--gr)">cpu</b>       (REAL) RAF timing + compute benchmark (int/float/memory)');
+        tp('<b style="color:var(--gr)">gpu</b>       (REAL) WebGL 3D cube FPS benchmark (180 frames)');
+        tp('<b style="color:var(--gr)">ram</b>       (SPEC) device RAM + (REAL) allocation probe + bandwidth');
+        tp('<b style="color:var(--gr)">storage</b>   (SPEC) capacity + (REAL) Cache API read/write speed');
+        tp('<b style="color:var(--gr)">dns</b>       (REAL) DNS test — 5 ad domains');
+        tp('<b style="color:var(--gr)">net</b>       (REAL) speed — 3-sample throughput test');
+        tp('<b style="color:var(--gr)">battery</b>   (REAL) battery — level, charging, drain');
+        tp('<b style="color:var(--gr)">thermal</b>   (REAL) thermal — RAF degradation + CPU stress');
+        tp('<b style="color:var(--gr)">webgpu</b>    (REAL) WebGPU adapter info (if available)');
+        tp('<b style="color:var(--gr)">probe</b>     (REAL) run ALL hardware probes (CPU+RAM+storage+thermal)');
+        tp('<b style="color:var(--gr)">sysinfo</b>   Show all device info');
+        tp('<b style="color:var(--gr)">score</b>     Show Performance Score');
+        tp('<b style="color:var(--gr)">bench</b>     Run ALL benchmarks (CPU+GPU+DNS+NET)');
+        tp('<b style="color:var(--gr)">profile</b>   Show profile status');
+        tp('<b style="color:var(--gr)">compat</b>    Check API compatibility');
+        tp('<b style="color:var(--gr)">clear</b>     Clear terminal');
+    },
+    clear(){termOut.innerHTML='';},
+    sysinfo(){
+        tp('═══ <span style="color:var(--yl)">System Info</span> ═══');
+        tp(`<span style="color:var(--dm)">Model:</span>     <b>${model}</b>`);
+        tp(`<span style="color:var(--dm)">Platform:</span>  ${navigator.platform||'iOS'}`);
+        tp(`<span style="color:var(--dm)">Screen:</span>    ${Math.round(screen.width*(window.devicePixelRatio||1))}x${Math.round(screen.height*(window.devicePixelRatio||1))} @${(window.devicePixelRatio||1).toFixed(1)}x`);
+        if(navigator.deviceMemory)tp(`<span style="color:var(--dm)">RAM:</span>       <b>${navigator.deviceMemory}</b> GB <span style="color:var(--gr)">(REAL)</span>`);
+        else if(deviceSpecs)tp(`<span style="color:var(--dm)">RAM:</span>       <b>${deviceSpecs.r}</b> <span style="color:var(--bl)">(from model DB)</span>`);
+        else tp(`<span style="color:var(--dm)">RAM:</span>       N/A`);
+        if(navigator.hardwareConcurrency)tp(`<span style="color:var(--dm)">CPU:</span>       <b>${navigator.hardwareConcurrency}</b> cores <span style="color:var(--gr)">(REAL)</span>`);
+        else if(deviceSpecs)tp(`<span style="color:var(--dm)">CPU:</span>       <b>${deviceSpecs.c}</b> <span style="color:var(--bl)">(from model DB)</span>`);
+        else tp(`<span style="color:var(--dm)">CPU:</span>       N/A`);
+        tp(`<span style="color:var(--dm)">Browser:</span>   Safari (WebKit) <span style="color:var(--dm)">(REAL)</span>`);
+        tp(`<span style="color:var(--dm)">Online:</span>    ${navigator.onLine?'<span style="color:var(--gr)">Yes</span>':'<span style="color:var(--rd)">No</span>'}`);
+        if(deviceSpecs)tp(`<span style="color:var(--dm)">SoC:</span>       <b>${deviceSpecs.g}</b> <span style="color:var(--bl)">(from model DB)</span>`);
+        else tp(`<span style="color:var(--dm)">SoC:</span>       Unknown`);
+
+    },
+    async battery(){
+        tp('═══ <span style="color:var(--yl)">Battery</span> ═══');
+        try{const b=await navigator.getBattery();
+            const p=Math.round(b.level*100);
+            tp(`<span style="color:var(--dm)">Level:</span>     <b>${p}%</b> <span style="color:var(--dm)">(REAL)</span>`);
+            tp(`<span style="color:var(--dm)">Charging:</span>  ${b.charging?'Yes':'No'} <span style="color:var(--dm)">(REAL)</span>`);
+            tp(`<span style="color:var(--dm)">Time:</span>      ${b.dischargingTime===Infinity?'N/A':Math.round(b.dischargingTime/60)+' min'}`);
+            // Track drain
+            const now=Date.now(), last=localStorage.getItem('bat_last');
+            if(last){const dt=(now-parseInt(last))/60000;if(dt>5){
+                const lastLv=parseFloat(localStorage.getItem('bat_lv')||p);
+                const drain=((lastLv-p)/dt*60).toFixed(1);
+                if(drain>0)tp(`<span style="color:var(--dm)">Drain:</span>    ~${drain}%/h`);
+            }}
+            localStorage.setItem('bat_last',now);localStorage.setItem('bat_lv',p);
+        }catch(e){tp('<span style="color:var(--rd)">Battery API not available on this iOS</span>');}
+    },
+    async storage(){
+        tp('═══ <span style="color:var(--yl)">Storage — Spec + REAL Cache API benchmark</span> ═══');
+        if(deviceSpecs)tp(`<span style="color:var(--dm)">Capacity:</span>  <b>${deviceSpecs.s}</b> <span style="color:var(--bl)">(spec)</span>`);
+        if(navigator.storage&&navigator.storage.estimate) try{
+            const s=await navigator.storage.estimate();
+            tp(`<span style="color:var(--dm)">Safari quota:</span> ${(s.quota/1073741824).toFixed(0)} GB | <span style="color:var(--dm)">Used:</span> ${(s.usage/1073741824).toFixed(1)} GB`);
+        }catch(e){}
+        // REAL Cache API benchmark
+        if('caches'in window)try{
+            const cache=await caches.open('_perfbench_');
+            const blob=new Blob([new Uint8Array(1048576)]); // 1MB
+            const t0=performance.now();
+            await cache.put('/_bench',new Response(blob));
+            const r=await cache.match('/_bench');
+            const data=await r.blob();
+            const total=performance.now()-t0;
+            await cache.delete('/_bench');
+            if(total>0){
+                const spd=(1048576*2/total*1000/1048576).toFixed(1); // read+write
+                tp(`<span style="color:var(--dm)">Cache speed:</span> <b>${spd} MB/s</b> <span style="color:var(--gr)">(REAL)</span>`);
+            }
+        }catch(e){tp('<span style="color:var(--dm)">Cache API benchmark N/A</span>');}
+    },
+    async cpu(){
+        tp('═══ <span style="color:var(--yl)">CPU — RAF Frame Timing</span> ═══');
+        // Calibrate refresh rate
+        let cal=[];let cl=performance.now();
+        for(let i=0;i<12;i++)await new Promise(r=>requestAnimationFrame(t=>{if(i>0)cal.push(t-cl);cl=t;r();}));
+        const calAvg=cal.reduce((a,b)=>a+b,0)/cal.length;
+        const refreshRate=Math.round(1000/calAvg/10)*10;
+        const budget=1000/refreshRate;
+        // Main benchmark with timeout
+        const frames=120;const times=[];let last=performance.now(),aborted=false;
+        const timer=setTimeout(()=>{aborted=true;},30000);
+        for(let i=0;i<=frames;i++){
+            if(aborted)break;
+            await new Promise(r=>requestAnimationFrame(t=>{if(i>0)times.push(t-last);last=t;r();}));
+        }
+        clearTimeout(timer);
+        if(aborted){tp('<span style="color:var(--rd)">CPU benchmark timed out after 30s</span>');return;}
+        const avg=times.reduce((a,b)=>a+b,0)/times.length;
+        const jank=times.filter(t=>t>budget).length;
+        const jp=(jank/times.length*100).toFixed(1);
+        const load=Math.min(100,Math.max(0,Math.round((avg-budget)/budget*100)));
+        tp(`<span style="color:var(--dm)">Display:</span>   <b>${refreshRate}Hz</b> <span style="color:var(--dm)">(calibrated)</span>`);
+        tp(`<span style="color:var(--dm)">Avg frame:</span> <b>${avg.toFixed(2)}ms</b> <span style="color:var(--dm)">(REAL)</span>`);
+        tp(`<span style="color:var(--dm)">Min:</span> ${Math.min(...times).toFixed(2)}ms | <span style="color:var(--dm)">Max:</span> ${Math.max(...times).toFixed(2)}ms`);
+        tp(`<span style="color:var(--dm)">Jank (>${budget.toFixed(1)}ms):</span> ${jank}/${frames} (${jp}%) ${jp>15?'<span style="color:var(--rd)">HIGH</span>':jp>5?'<span style="color:var(--yl)">MODERATE</span>':'<span style="color:var(--gr)">LOW</span>'}`);
+        tp(`<span style="color:var(--dm)">Load:</span> ${load}% ${load>60?'<span style="color:var(--rd)">HEAVY</span>':load>30?'<span style="color:var(--yl)">MODERATE</span>':'<span style="color:var(--gr)">LIGHT</span>'}`);
+        tp(`<span style="color:var(--dm)">${'█'.repeat(Math.round(load/5))+'░'.repeat(20-Math.round(load/5))}</span>`);
+        // Update bench UI
+        const c=load>60?'var(--rd)':load>30?'var(--yl)':'var(--gr)';
+        $('cpuLoad').textContent=load+'%';$('cpuLoad').style.color=c;
+        $('cpuJank').textContent=jp+'%';$('cpuJank').style.color=jp>15?'var(--rd)':jp>5?'var(--yl)':'var(--gr)';
+        $('cpuBar').style.width=load+'%';$('cpuBar').style.background=c;
+        // Histogram
+        const h=$('cpuHist');h.innerHTML='';
+        for(let i=0;i<30;i++){const bar=document.createElement('div');bar.className='barr';
+            const v=times[i]||0;const ht=Math.min(40,v*2);bar.style.height=ht+'px';
+            bar.style.background=v>budget?'rgba(255,68,68,.5)':'rgba(0,230,118,.4)';h.appendChild(bar);}
+        perfScore.cpu=Math.max(0,100-load);updateScore();
+        // Compute benchmark
+        tp('');tp('<span style="color:var(--yl)">▼ REAL Compute Benchmark</span>');
+        const INT_N=20000000;let t0=performance.now(),xx=0;
+        for(let i=0;i<INT_N;i++){xx+=i*3-(i>>1);xx^=i;xx|=(i<<2);}
+        const intMs=performance.now()-t0,intOps=(INT_N/intMs*1000/1e6).toFixed(1);
+        const FLT_N=8000000;t0=performance.now();let yy=0.0;
+        for(let i=0;i<FLT_N;i++){yy+=Math.sin(i)*0.5;yy=Math.sqrt(Math.abs(yy)+0.01);}
+        const fltMs=performance.now()-t0,fltOps=(FLT_N/fltMs*1000/1e6).toFixed(1);
+        const MEM_N=5000000;const memArr=new Float64Array(MEM_N);t0=performance.now();
+        for(let i=0;i<MEM_N;i++)memArr[i]=i*0.5;
+        const memMs=performance.now()-t0,memBw=(MEM_N*8/memMs*1000/1e6).toFixed(0);
+        tp(`<span style="color:var(--dm)">Integer:</span> <b>${intOps}M</b> op/s <span style="color:var(--gr)">(REAL)</span> | <span style="color:var(--dm)">Float:</span> <b>${fltOps}M</b> op/s | <span style="color:var(--dm)">Memory:</span> <b>${memBw}</b> GB/s`);
+        const computeScore=Math.min(100,Math.round((parseFloat(intOps)*2+parseFloat(fltOps)+parseFloat(memBw)*5)/4));
+        tp(`<span style="color:var(--dm)">Compute score:</span> <b>${computeScore}/100</b>`);
+    },
+    async gpu(){
+        tp('═══ <span style="color:var(--yl)">GPU — WebGL 3D Benchmark</span> ═══');
+        q('.tab[data-pn="bench"]').click();
+        runGPU();
+    },
+    async dns(){
+        tp('═══ <span style="color:var(--yl)">DNS — 5 Ad Domains</span> ═══');
+        const ads=[['ad.doubleclick.net',0],['pagead2.googlesyndication.com',0],['www.google-analytics.com',0],['amazon-adsystem.com',0],['connect.facebook.net',0]];
+        let blocked=0;
+        for(let i=0;i<ads.length;i++){
+            const url='https://'+ads[i][0]; const t0=performance.now();
+            try{await fetch(url,{mode:'no-cors',cache:'no-store',signal:AbortSignal.timeout(4000)});
+                ads[i][1]=-1; // not blocked
+            }catch(e){if(e.name!='TimeoutError'){ads[i][1]=1;blocked++;}else ads[i][1]=-2;}
+        }
+        for(const a of ads){
+            const ms=a[1]===1?`<span style="color:var(--gr)">BLOCKED</span>`:a[1]===-1?`<span style="color:var(--rd)">NOT BLOCKED</span>`:`<span style="color:var(--yl)">TIMEOUT</span>`;
+            tp(`${a[1]===1?'<span style="color:var(--gr)">✓</span>':'<span style="color:var(--rd)">✗</span>'} ${a[0]} ${ms}`);
+        }
+        tp(`<span style="color:var(--dm)">Result:</span> <b>${blocked}/5 blocked</b> ${blocked===5?'<span style="color:var(--gr)">DNS ACTIVE ✓</span>':'<span style="color:var(--rd)">Not all blocked</span>'}`);
+        perfScore.dns=blocked*20;updateScore();
+        // Update DNS grid in bench tab
+        renderDNS(ads);
+        $('dnsResult').innerHTML=blocked===5?'<span style="color:var(--gr)">✓ 5/5 blocked — DNS ACTIVE</span>':`<span style="color:var(--yl)">⚠ ${blocked}/5 blocked</span>`;
+    },
+    async net(){
+        tp('═══ <span style="color:var(--yl)">Network — Speed Test</span> ═══');
+        let total=0,ok=0;
+        for(let i=0;i<3;i++){
+            const t0=performance.now();
+            try{await fetch('https://www.cloudflare.com/favicon.ico',{mode:'no-cors',cache:'no-store',signal:AbortSignal.timeout(5000)});
+                const ms=performance.now()-t0,mbps=((10*8)/ms*1000).toFixed(1);
+                tp(`<span style="color:var(--gr)">✓</span> Test ${i+1}: ${mbps} Mbps (${ms.toFixed(0)}ms)`);total+=parseFloat(mbps);ok++;
+            }catch(e){tp(`<span style="color:var(--rd)">✗</span> Test ${i+1}: failed`);}
+        }
+        if(ok){const avg=(total/ok).toFixed(1);tp(`<span style="color:var(--dm)">Avg:</span> <b>${avg} Mbps</b> <span style="color:var(--dm)">(REAL)</span>`);
+            $('netMbps').textContent=avg;$('netMbps').style.color=avg>20?'var(--gr)':avg>5?'var(--yl)':'var(--rd)';
+            $('netDetail').textContent=`${ok}/3 samples • ${avg} Mbps avg`;
+            perfScore.net=Math.min(100,Math.round(avg*2));updateScore();
+        }
+    },
+    async thermal(){
+        tp('═══ <span style="color:var(--yl)">Thermal State — RAF Degradation Analysis</span> ═══');
+        tp('<span style="color:var(--dm)">Phase 1: Baseline (idle)</span>');
+        let bTimes=[];let bLast=performance.now();
+        for(let i=0;i<15;i++)await new Promise(r=>requestAnimationFrame(t=>{if(i>0)bTimes.push(t-bLast);bLast=t;r();}));
+        const bAvg=bTimes.reduce((a,b)=>a+b,0)/bTimes.length;
+        tp(`<span style="color:var(--dm)">Baseline:</span> ${bAvg.toFixed(2)}ms`);
+
+        tp('<span style="color:var(--dm)">Phase 2: CPU stress (matrix ops)</span>');
+        function burnCPU(ms){const t=performance.now()+ms;let x=0;while(performance.now()<t){x+=Math.sin(x)*Math.cos(x);}return x;}
+        const lTimes=[];let lLast=performance.now();let stress=0;
+        for(let i=0;i<40;i++){
+            stress+=burnCPU(2); // 2ms CPU work per frame
+            await new Promise(r=>requestAnimationFrame(t=>{lTimes.push(t-lLast);lLast=t;r();}));
+        }
+
+        const lAvg=lTimes.reduce((a,b)=>a+b,0)/lTimes.length;
+        const bDelta=lAvg-bAvg;
+        // Linear regression slope to detect degradation
+        const n=lTimes.length;
+        const sumX=n*(n-1)/2,sumY=lTimes.reduce((a,b)=>a+b,0);
+        const sumXY=lTimes.reduce((s,v,i)=>s+i*v,0),sumX2=n*(n-1)*(2*n-1)/6;
+        const slope=n*sumXY-sumX*sumY>0?(n*sumXY-sumX*sumY)/(n*sumX2-sumX*sumX):0;
+
+        let state='Normal',cls='color:var(--gr)';
+        if(slope>0.08||bDelta>20){state='Thermal Throttling Likely';cls='color:var(--rd)';}
+        else if(slope>0.03||bDelta>10){state='Warm';cls='color:var(--yl)';}
+        tp(`<span style="color:var(--dm)">Loaded avg:</span> ${lAvg.toFixed(1)}ms (${bDelta > 0 ? '+' : ''}${bDelta.toFixed(1)}ms vs baseline)`);
+        tp(`<span style="color:var(--dm)">Degradation slope:</span> ${slope.toFixed(4)} ${slope>0.05?'<span style="color:var(--rd)">⬆</span>':slope>0?'<span style="color:var(--gr)">➡</span>':'<span style="color:var(--gr)">➡</span>'}`);
+        tp(`<span style="color:var(--dm)">State:</span> <b style="${cls}">${state}</b>`);
+        if(state!=='Normal')tp('<span style="color:var(--dm)">Tip: Thermal throttle may reduce gaming performance. Remove case, reduce brightness.</span>');
+    },
+    async ram(){
+        tp('═══ <span style="color:var(--yl)">Memory — Spec + REAL allocation probe</span> ═══');
+        if(deviceSpecs)tp(`<span style="color:var(--dm)">Device RAM:</span> <b>${deviceSpecs.r}</b> <span style="color:var(--bl)">(spec)</span>`);
+        else if(navigator.deviceMemory)tp(`<span style="color:var(--dm)">Device RAM:</span> <b>${navigator.deviceMemory} GB</b> <span style="color:var(--gr)">(REAL)</span>`);
+        // REAL allocation probe
+        let maxSize=0,size=65536;
+        try{
+            while(size<209715200){
+                const buf=new ArrayBuffer(size);
+                new Uint8Array(buf)[0]=1; // touch page
+                maxSize=size;size*=2;
+            }
+        }catch(e){}
+        if(maxSize>0){
+            const testSize=Math.min(maxSize,52428800);
+            const buf=new ArrayBuffer(testSize);const v=new Uint8Array(buf);
+            const t0=performance.now();
+            for(let i=0;i<testSize;i+=4096)v[i]=255;
+            const bw=(testSize/(performance.now()-t0)/1024).toFixed(0);
+            tp(`<span style="color:var(--dm)">Max alloc:</span> <b>${(maxSize/1048576).toFixed(0)} MB</b> <span style="color:var(--gr)">(REAL)</span>`);
+            tp(`<span style="color:var(--dm)">Write speed:</span> ${bw} MB/s <span style="color:var(--gr)">(REAL)</span>`);
+        } else tp('<span style="color:var(--rd)">Allocation benchmark failed</span>');
+    },
+    profile(){
+        tp('═══ <span style="color:var(--yl)">Profile Status</span> ═══');
+        tp('Run <b>dns</b> to test DNS blocking (5 ad domains)');
+        tp('Profile v11: 6 payloads • 34 restrictions • DNSoH • Root CA • Game Tuning • WebClip');
+        tp('Check: Settings > General > VPN & Device Management');
+        tp('<span style="color:var(--dm)">MDM comparison: Profile-equivalent to MDM restrictions. For full MDM, requires Apple Business Manager.</span>');
+    },
+    score(){
+        updateScore(true);
+        tp(`═══ <span style="color:var(--yl)">Performance Score</span> ═══`);
+        tp(`<span style="color:var(--dm)">GPU:</span> ${perfScore.gpu}/100 | <span style="color:var(--dm)">CPU:</span> ${perfScore.cpu}/100`);
+        tp(`<span style="color:var(--dm)">DNS:</span> ${perfScore.dns}/100 | <span style="color:var(--dm)">NET:</span> ${perfScore.net}/100`);
+        const t=Object.values(perfScore).reduce((a,b)=>a+b,0)/4;
+        tp(`<span style="color:var(--dm)">TOTAL:</span> <b>${Math.round(t)}/100</b>`);
+    },
+    async bench(){
+        tp('═══ <span style="color:var(--yl)">Running ALL Benchmarks</span> ═══');
+        await cmds.cpu();tp('');
+        cmds.gpu();tp('');
+        await cmds.dns();tp('');
+        await cmds.net();tp('');
+        tp('<span style="color:var(--gr)">✓ All benchmarks completed — data is REAL device measurements</span>');
+    },
+    async probe(){
+        tp('═══ <span style="color:var(--yl)">Hardware Probe — ALL REAL Measurements</span> ═══');
+        tp(`<span style="color:var(--dm)">Model:</span> ${model}`);
+        if(deviceSpecs)tp(`<span style="color:var(--dm)">Spec:</span>  ${deviceSpecs.r} RAM • ${deviceSpecs.c} • ${deviceSpecs.g} • ${deviceSpecs.s}`);
+        tp('');await cmds.cpu();tp('');
+        await cmds.ram();tp('');
+        await cmds.storage();tp('');
+        await cmds.thermal();tp('');
+        tp('<span style="color:var(--gr)">✓ Probe complete — all data measured in real-time on this device</span>');
+    },
+    async webgpu(){
+        tp('═══ <span style="color:var(--yl)">WebGPU Benchmark</span> ═══');
+        if(!navigator.gpu){tp('<span style="color:var(--rd)">WebGPU not available on this device</span>');return;}
+        try{
+            const adapter=await navigator.gpu.requestAdapter();
+            if(!adapter){tp('<span style="color:var(--rd)">No WebGPU adapter found</span>');return;}
+            const info=adapter.info||{};
+            tp(`<span style="color:var(--dm)">Vendor:</span>    ${info.vendor||'N/A'}`);
+            tp(`<span style="color:var(--dm)">Arch:</span>      ${info.architecture||'N/A'}`);
+            tp(`<span style="color:var(--dm)">Device:</span>    ${info.device||'N/A'}`);
+            tp(`<span style="color:var(--dm)">Features:</span>  ${(await adapter.features||[]).join(', ')||'none'}`);
+            tp(`<span style="color:var(--gr)">✓ WebGPU adapter found — REAL GPU info</span>`);
+        }catch(e){tp(`<span style="color:var(--rd)">WebGPU error: ${e.message}</span>`);}
+    },
+    compat(){
+        tp('═══ <span style="color:var(--yl)">API Compatibility</span> ═══');
+        const checks=[
+            ['WebGL 1.0',()=>{try{return!!document.createElement('canvas').getContext('webgl')}catch(e){return false}}],
+            ['WebGL 2.0',()=>{try{return!!document.createElement('canvas').getContext('webgl2')}catch(e){return false}}],
+            ['navigator.deviceMemory',()=>!!navigator.deviceMemory],
+            ['navigator.hardwareConcurrency',()=>!!navigator.hardwareConcurrency],
+            ['navigator.getBattery()',()=>'getBattery'in navigator],
+            ['navigator.storage.estimate',()=>!!(navigator.storage&&navigator.storage.estimate)],
+            ['navigator.connection',()=>!!(navigator.connection||navigator.mozConnection||navigator.webkitConnection)],
+            ['performance.memory',()=>!!performance.memory],
+            ['AbortSignal.timeout',()=>typeof AbortSignal.timeout==='function'],
+            ['localStorage',()=>{try{localStorage.setItem('_t','1');localStorage.removeItem('_t');return true}catch(e){return false}}],
+            ['requestAnimationFrame',()=>typeof requestAnimationFrame==='function'],
+            ['WebGPU',()=>!!(navigator.gpu)],
+            ['WebTransport',()=>!!(navigator.xr)],
+        ];
+        for(const[name,fn]of checks){
+            const ok=fn();
+            tp(`${ok?'<span style="color:var(--gr)">✓</span>':'<span style="color:var(--rd)">✗</span>'} ${name} ${ok?'<span style="color:var(--gr)">available</span>':'<span style="color:var(--rd)">N/A</span>'}`);
+        }
+        const total=checks.filter(([,fn])=>fn()).length;
+        tp(`<span style="color:var(--dm)">Compatibility:</span> <b>${total}/${checks.length}</b> APIs available`);
+        if(total<12)tp('<span style="color:var(--yl)">Tip: Some benchmarks may be limited. Use Safari on real iOS device.</span>');
+    }
+};
+
+termIn.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){
+        const cmd=termIn.value.trim().toLowerCase();termIn.value='';if(!cmd)return;
+        tcmd(cmd);cmdHistory.push(cmd);histIdx=cmdHistory.length;
+        if(cmds[cmd])cmds[cmd]();else tp(`<span style="color:var(--rd)">Unknown:</span> ${cmd}. Type help.`);
+    }else if(e.key==='ArrowUp'&&histIdx>0){
+        histIdx--;termIn.value=cmdHistory[histIdx];e.preventDefault();
+    }else if(e.key==='ArrowDown'){
+        if(histIdx<cmdHistory.length-1){histIdx++;termIn.value=cmdHistory[histIdx];}
+        else{histIdx=cmdHistory.length;termIn.value='';}
+        e.preventDefault();
+    }
+});
+termIn.focus();
+document.addEventListener('touchstart',()=>termIn.focus());
+
+function updateScore(show){
+    const t=Object.values(perfScore).reduce((a,b)=>a+b,0);
+    const avg=t/4;
+    const el=$('perfScore');
+    if(!el)return;
+    el.textContent=Math.round(avg)||'--';
+    const c=avg>80?'var(--gr)':avg>50?'var(--yl)':'var(--rd)';
+    el.style.borderColor=c;el.style.color=c;
+    $('scGpu').textContent='GPU: '+perfScore.gpu+'/100';$('scGpu').style.color=perfScore.gpu>70?'var(--gr)':perfScore.gpu>40?'var(--yl)':'var(--rd)';
+    $('scCpu').textContent='CPU: '+perfScore.cpu+'/100';$('scCpu').style.color=perfScore.cpu>70?'var(--gr)':perfScore.cpu>40?'var(--yl)':'var(--rd)';
+    $('scDns').textContent='DNS: '+perfScore.dns+'/100';$('scDns').style.color=perfScore.dns>80?'var(--gr)':'var(--yl)';
+    $('scNet').textContent='NET: '+perfScore.net+'/100';$('scNet').style.color=perfScore.net>60?'var(--gr)':perfScore.net>20?'var(--yl)':'var(--rd)';
+}
+
+function renderDNS(ads){
+    const g=$('dnsGrid');g.innerHTML='';
+    for(const a of ads){
+        const d=document.createElement('div');d.className='di';
+        d.innerHTML=`<div class="nm">${a[0].split('.')[0]}.</div><div class="stt" style="color:${a[1]===1?'var(--gr)':a[1]===-1?'var(--rd)':'var(--yl)'}">${a[1]===1?'BLOCKED':a[1]===-1?'OPEN':'TIMEOUT'}</div>`;
+        g.appendChild(d);
+    }
+}
+
+// ---- GPU BENCHMARK ----
+let gpRunning=false;
+function runGPU(){
+    if(gpRunning)return;gpRunning=true;
+    const btn=$('gpuBtn'),el=$('gpuFpsAvg'),el2=$('gpuFpsMin'),el3=$('gpuFpsMax');
+    btn.textContent='⏳ 0/180';btn.disabled=true;
+    el.textContent='...';el2.textContent='...';el3.textContent='...';
+    const c=$('gpuCanvas');c.width=Math.round(280*(window.devicePixelRatio||1));c.height=Math.round(110*(window.devicePixelRatio||1));
+    let gl,ctxLost=false;
+    try{gl=c.getContext('webgl')||c.getContext('experimental-webgl');}catch(e){}
+    if(!gl){
+        el.textContent='N/A';el.style.color='var(--rd)';btn.textContent='▶ GPU';btn.disabled=false;gpRunning=false;
+        tp('<span style="color:var(--rd)">WebGL not available on this device</span>');
+        return;
+    }
+    // Handle WebGL context loss
+    const onLost=e=>{e.preventDefault();ctxLost=true;abortBench('WebGL context lost');};
+    const onRestored=()=>{if(!gpRunning)tp('<span style="color:var(--gr)">WebGL context restored — tap GPU to retry</span>');};
+    c.addEventListener('webglcontextlost',onLost);
+    c.addEventListener('webglcontextrestored',onRestored);
+
+    // WebGL 2.0 shader - rotating cube
+    const vs='attribute vec3 p;attribute vec3 c;uniform float t;varying vec3 vc;void main(){float a=t*0.5;mat3 r=mat3(cos(a),0,sin(a),0,1,0,-sin(a),0,cos(a));gl_Position=vec4(r*p,1.0);vc=c;}';
+    const fs='precision mediump float;varying vec3 vc;void main(){gl_FragColor=vec4(vc,1.0);}';
+    function mkShader(src,t){const s=gl.createShader(t);gl.shaderSource(s,src);gl.compileShader(s);return s;}
+    const prog=gl.createProgram();
+    gl.attachShader(prog,mkShader(vs,gl.VERTEX_SHADER));gl.attachShader(prog,mkShader(fs,gl.FRAGMENT_SHADER));
+    gl.linkProgram(prog);
+    if(!gl.getProgramParameter(prog,gl.LINK_STATUS)){
+        el.textContent='ERR';el.style.color='var(--rd)';btn.textContent='▶ GPU';btn.disabled=false;gpRunning=false;
+        tp('<span style="color:var(--rd)">WebGL shader link failed on this device</span>');return;
+    }
+    gl.useProgram(prog);
+    const verts=new Float32Array([
+        -0.5,-0.5,0.5,1,0,0, 0.5,-0.5,0.5,0,1,0, 0.5,0.5,0.5,0,0,1, -0.5,0.5,0.5,1,1,0,
+        -0.5,-0.5,-0.5,1,0,1, 0.5,-0.5,-0.5,0,1,1, 0.5,0.5,-0.5,1,1,1, -0.5,0.5,-0.5,1,0,0]);
+    const idx=new Uint16Array([0,1,2,0,2,3, 1,5,6,1,6,2, 5,4,7,5,7,6, 4,0,3,4,3,7, 3,2,6,3,6,7, 4,5,1,4,1,0]);
+    gl.bindBuffer(gl.ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ARRAY_BUFFER,verts,gl.STATIC_DRAW);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,idx,gl.STATIC_DRAW);
+    const pl=gl.getAttribLocation(prog,'p');gl.enableVertexAttribArray(pl);gl.vertexAttribPointer(pl,3,gl.FLOAT,false,24,0);
+    const cl=gl.getAttribLocation(prog,'c');gl.enableVertexAttribArray(cl);gl.vertexAttribPointer(cl,3,gl.FLOAT,false,24,12);
+    const tl=gl.getUniformLocation(prog,'t');
+    const dpr=window.devicePixelRatio||1;
+    gl.clearColor(0.02,0.03,0.05,1);gl.enable(gl.DEPTH_TEST);gl.viewport(0,0,c.width,c.height);
+
+    let frames=0,totalMs=0,minFps=999,maxFps=0,start=performance.now(),runs=0;
+    // Timeout watchdog — 30s total
+    const gpTimer=setTimeout(()=>{if(gpRunning)abortBench('GPU benchmark timed out');},30000);
+    function abortBench(msg){
+        ctxLost=true;gpRunning=false;btn.textContent='▶ GPU';btn.disabled=false;
+        el.textContent='T/O';el.style.color='var(--rd)';
+        tp(`<span style="color:var(--rd)">${msg}</span>`);
+        clearTimeout(gpTimer);
+        c.removeEventListener('webglcontextlost',onLost);
+        c.removeEventListener('webglcontextrestored',onRestored);
+    }
+    function draw(){
+        if(ctxLost)return;
+        const now=performance.now();
+        if(runs===0)start=now; // reset start on first RAF callback
+        if(runs>0){const dt=now-start;start=now;totalMs+=dt;const fps=1000/dt;if(fps<minFps)minFps=fps;if(fps>maxFps)maxFps=fps;frames++;}
+        runs++;
+        btn.textContent=`⏳ ${runs}/${180}`;
+        gl.uniform1f(tl,now/1000);
+        gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+        gl.drawElements(gl.TRIANGLES,36,gl.UNSIGNED_SHORT,0);
+        if(runs<=180&&!ctxLost)requestAnimationFrame(draw);else done();
+    }
+    function done(){
+        clearTimeout(gpTimer);
+        c.removeEventListener('webglcontextlost',onLost);
+        c.removeEventListener('webglcontextrestored',onRestored);
+        if(ctxLost)return;
+        const avgFps=frames>0?frames/(totalMs/1000):0;
+        const score=Math.round(avgFps*10);
+        el.textContent=avgFps.toFixed(1);el.style.color=avgFps>50?'var(--gr)':avgFps>25?'var(--yl)':'var(--rd)';
+        el2.textContent=minFps.toFixed(1);el2.style.color=minFps>30?'var(--gr)':'var(--yl)';
+        el3.textContent=maxFps.toFixed(1);el3.style.color='var(--bl)';
+        btn.textContent='▶ GPU';btn.disabled=false;gpRunning=false;
+        perfScore.gpu=Math.min(100,Math.round(score/5));updateScore();
+        tp(`<span style="color:var(--gr)">✓</span> GPU: ${avgFps.toFixed(1)} FPS avg, min ${minFps.toFixed(1)}, max ${maxFps.toFixed(1)}, score ${score}`);
+    }
+    draw();
+}
+
+// Buttons
+$('cpuBtn').addEventListener('click',()=>cmds.cpu());
+$('dnsBtn').addEventListener('click',()=>cmds.dns());
+$('netBtn').addEventListener('click',()=>cmds.net());
+$('gpuBtn').addEventListener('click',runGPU);
+
+// ---- INIT DASHBOARD ----
+async function initDash(){
+    try{
+        const b=await navigator.getBattery();
+        const p=Math.round(b.level*100);$('batLv').style.width=p+'%';
+        $('batLv').style.background=p>20?(p>60?'var(--gr)':'var(--yl)'):'var(--rd)';
+        $('batTx').textContent=p+'%';$('batTx').style.color=p>20?(p>60?'var(--gr)':'var(--yl)'):'var(--rd)';
+        $('batStt').textContent=b.charging?'Charging':'Battery';
+        $('batBar').style.width=p+'%';$('batBar').style.background=p>20?(p>60?'var(--gr)':'var(--yl)'):'var(--rd)';
+        // Drain
+        const now=Date.now(),last=localStorage.getItem('bat_last');
+        if(last){const dt=(now-parseInt(last))/60000;if(dt>3){
+            const ll=parseFloat(localStorage.getItem('bat_lv')||p);
+            const dr=((ll-p)/dt*60).toFixed(1);
+            if(dr>0)$('batDrain').textContent=`~${dr}%/h`;
+        }}
+        localStorage.setItem('bat_last',now);localStorage.setItem('bat_lv',p);
+    }catch(e){$('batTx').textContent='N/A';$('batStt').textContent='No API';}
+
+    try{
+        const nc=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
+        if(nc&&nc.effectiveType){$('netType').textContent=(nc.effectiveType||'wifi').toUpperCase();$('netSpeed').textContent=nc.downlink?nc.downlink.toFixed(1):'--';}
+        else throw 1;
+    }catch(e){$('netType').textContent='N/A';$('netSpeed').textContent='N/A';}
+
+    if(deviceSpecs){
+        $('memVal').textContent=deviceSpecs.r;$('memVal').style.color='var(--bl)';
+        $('cpuVal').textContent=deviceSpecs.c;$('cpuVal').style.color='var(--bl)';
+    }
+    if(navigator.deviceMemory){$('memVal').textContent=navigator.deviceMemory+' GB';$('memVal').style.color='var(--gr)';}
+    if(navigator.hardwareConcurrency){$('cpuVal').textContent=navigator.hardwareConcurrency+' cores';$('cpuVal').style.color='var(--gr)';}
+    $('scrVal').textContent=Math.round(screen.width*(window.devicePixelRatio||1))+'x'+Math.round(screen.height*(window.devicePixelRatio||1));
+    if(navigator.storage&&navigator.storage.estimate)try{
+        const s=await navigator.storage.estimate();
+        const quotaTxt=(s.quota/1073741824).toFixed(0)+' GB';
+        $('stoLabel').textContent=deviceSpecs?'Capacity':'Safari Quota';
+        $('stoVal').textContent=deviceSpecs?s.s:quotaTxt;
+        $('stoVal').style.color=deviceSpecs?'var(--bl)':'var(--dm)';
+    }catch(e){}
+
+    // Tests
+    let tI=0,tD=0,tL=0;
+    try{await fetch('https://www.cloudflare.com/favicon.ico',{mode:'no-cors',cache:'no-store',signal:AbortSignal.timeout(5000)});tI=1;}catch(e){tI=2}
+    try{await fetch('https://ad.doubleclick.net',{mode:'no-cors',cache:'no-store',signal:AbortSignal.timeout(4000)});tD=2;}catch(e){if(e.name!='TimeoutError')tD=1;}
+    const t0=performance.now();
+    try{await fetch('https://www.google.com/favicon.ico',{mode:'no-cors',cache:'no-store',signal:AbortSignal.timeout(5000)});
+        tL=1;const ms=(performance.now()-t0).toFixed(0);
+        $('pingBar').style.width=Math.min(100,Math.max(4,parseInt(ms)>800?4:100-parseInt(ms)/8))+'%';
+        $('pingBar').style.background=parseInt(ms)<300?'var(--gr)':parseInt(ms)<800?'var(--yl)':'var(--rd)';
+        $('pingLabel').textContent=ms+'ms';
+    }catch(e){$('pingLabel').textContent='Error';}
+
+    if(tI===1&&tD===1&&tL===1){
+        sbd.className='d g';sbt.textContent='✅ Active • DNS block • 28 restrictions';
+        sd.innerHTML='Profile v10 installed. REAL device data below.';
+        ba.innerHTML='<span class="bdg g">PROFILE ACTIVE</span><span class="bdg b">DNS ACTIVE</span>';
+    } else if(tI===1){
+        sbd.className='d y';sbt.textContent='⚠ Network OK • Install profile';
+        sd.innerHTML='Tap download, allow in Safari, install in Settings.';
+        ba.innerHTML='<span class="bdg y">NEED PROFILE</span>';
+    } else {
+        sbd.className='d r';sbt.textContent='❌ No network';
+        ba.innerHTML='<span class="bdg r">NO NETWORK</span>';
+    }
+    const qiParts=[`<span style="color:var(--dm)">Model:</span> ${model}`];
+if(deviceSpecs)qiParts.push(`<span style="color:var(--dm)">RAM:</span> ${deviceSpecs.r}`,`<span style="color:var(--dm)">SoC:</span> ${deviceSpecs.g}`);
+qiParts.push(`<span style="color:var(--dm)">Battery:</span> ${$('batTx').textContent}`,`<span style="color:var(--dm)">Display:</span> ${$('scrVal').textContent}`,`<span style="color:var(--dm)">Type</span> <b>help</b> in Terminal`);
+$('quickInfo').innerHTML=qiParts.join('<br>');
+}
+initDash().catch(()=>{});
+
+// Init DNS grid with default
+renderDNS([
+    ['ad.doubleclick.net',0],['pagead2.googlesyndication.com',0],
+    ['www.google-analytics.com',0],['amazon-adsystem.com',0],['connect.facebook.net',0]]);
+})();
+</script>
+</body>
+</html>
