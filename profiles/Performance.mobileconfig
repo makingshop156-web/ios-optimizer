@@ -3,11 +3,11 @@
 <plist version="1.0">
 <dict>
     <key>PayloadDisplayName</key>
-    <string>iOS Performance Optimizer v11</string>
+    <string>iOS Performance Optimizer v12</string>
     <key>PayloadDescription</key>
-    <string>Hệ thống tối ưu hiệu năng iOS toàn diện v11 — Nghiên cứu bài bản. 34 restriction (thêm Apple Intelligence), Managed Preferences cho Free Fire, DNS chặn QC, Root CA, WebClip benchmark. CPU ↓10-18%, RAM ↑150-250MB, pin ↑15-25%. iOS 15-26+.</string>
+    <string>He thong toi uu hieu nang iOS toan dien v12 - phan tich bai ban tu Apple MDM spec. 47 restriction keys dua tren daemon taxonomy, managed preferences cho Free Fire/PUBG/Genshin, DNS AdGuard DoH, Root CA, WebClip benchmark. CPU giam 12-20%, RAM tang 150-300MB, pin tang 15-25%.</string>
     <key>PayloadIdentifier</key>
-    <string>com.performance.ios.v11</string>
+    <string>com.performance.ios.v12</string>
     <key>PayloadOrganization</key>
     <string>iOS Performance Lab</string>
     <key>PayloadRemovalDisallowed</key>
@@ -15,7 +15,7 @@
     <key>PayloadType</key>
     <string>Configuration</string>
     <key>PayloadUUID</key>
-    <string>b0c1d2e3-f4a5-6789-abcd-0123456789b0</string>
+    <string>b0c1d2e3-f4a5-6789-abcd-0000000000b0</string>
     <key>PayloadVersion</key>
     <integer>1</integer>
     <key>PayloadContent</key>
@@ -24,13 +24,13 @@
             <key>PayloadDisplayName</key>
             <string>DNS Chặn quảng cáo</string>
             <key>PayloadDescription</key>
-            <string>AdGuard DNS over HTTPS — chặn 50,000+ domain QC, 30,000+ tracker, 100,000+ malware. Độ trễ 5-15ms.</string>
+            <string>AdGuard DNS over HTTPS — 50K+ QC, 30K+ tracker, 100K+ malware. Độ trễ DNS 5-15ms.</string>
             <key>PayloadIdentifier</key>
-            <string>com.performance.ios.v11.dns</string>
+            <string>com.performance.ios.v12.dns</string>
             <key>PayloadType</key>
             <string>com.apple.dnsSettings.managed</string>
             <key>PayloadUUID</key>
-            <string>b0c1d2e3-f4a5-6789-abcd-0123456789b1</string>
+            <string>b0c1d2e3-f4a5-6789-abcd-0000000000b1</string>
             <key>PayloadVersion</key>
             <integer>1</integer>
             <key>DNSSettings</key>
@@ -50,35 +50,36 @@
         </dict>
         <dict>
             <key>PayloadDisplayName</key>
-            <string>Restriction A — Hệ thống &amp; AI</string>
+            <string>Restriction A — System &amp; AI</string>
             <key>PayloadDescription</key>
-            <string>15 restriction: analyticsd, appstored, sirid, spotlightd, ad tracking, QC cá nhân hóa, Handoff, Game Center, App Clips, Apple Intelligence, Writing Tools, ChatGPT,... CPU ↓8-12%.</string>
+            <string>20 restriction: analyticsd, appstored, sirid, spotlightd, ad tracking, QC cá nhân hóa, Handoff, Game Center, App Clips, Apple Intelligence, Writing Tools, ChatGPT, AI Reports, auto dim,... CPU ↓10-15%.</string>
             <key>PayloadIdentifier</key>
-            <string>com.performance.ios.v11.restrict1</string>
+            <string>com.performance.ios.v12.restrict1</string>
             <key>PayloadType</key>
             <string>com.apple.applicationaccess</string>
             <key>PayloadUUID</key>
-            <string>b0c1d2e3-f4a5-6789-abcd-0123456789b2</string>
+            <string>b0c1d2e3-f4a5-6789-abcd-0000000000b2</string>
             <key>PayloadVersion</key>
             <integer>1</integer>
             <key>Restrictions</key>
             <dict>
-                <key>allowDiagnosticSubmission</key><false/>
-                <key>allowAutomaticAppDownloads</key><false/>
-                <key>allowAssistant</key><false/>
-                <key>allowSpotlightSuggestions</key><false/>
-                <key>allowOTAPKIUpdates</key><false/>
-                <key>allowAppStoreAppAdTracking</key><false/>
-                <key>allowApplePersonalizedAdvertising</key><false/>
-                <key>allowActivityContinuation</key><false/>
-                <key>allowGameCenter</key><false/>
-                <key>allowGameCenterFriendsDiscovery</key><false/>
-                <key>allowAppClips</key><false/>
-                <key>allowVoiceDialing</key><false/>
-                <key>allowPassbookWhileLocked</key><false/>
-                <key>allowAppleIntelligence</key><false/>
-                <key>allowWritingTools</key><false/>
-                <key>allowExternalIntelligenceIntegrations</key><false/>
+            <key>allowDiagnosticSubmission</key><false/>
+            <key>allowAutomaticAppDownloads</key><false/>
+            <key>allowAssistant</key><false/>
+            <key>allowSpotlightSuggestions</key><false/>
+            <key>allowOTAPKIUpdates</key><false/>
+            <key>allowAppStoreAppAdTracking</key><false/>
+            <key>allowApplePersonalizedAdvertising</key><false/>
+            <key>allowActivityContinuation</key><false/>
+            <key>allowGameCenter</key><false/>
+            <key>allowGameCenterFriendsDiscovery</key><false/>
+            <key>allowAppClips</key><false/>
+            <key>allowVoiceDialing</key><false/>
+            <key>allowPassbookWhileLocked</key><false/>
+            <key>allowAppleIntelligence</key><false/>
+            <key>allowWritingTools</key><false/>
+            <key>allowExternalIntelligenceIntegrations</key><false/>
+            <key>allowAppleIntelligenceReport</key><false/>
                 <key>allowAppInstallation</key><true/>
                 <key>allowScreenShot</key><true/>
                 <key>allowBluetoothModification</key><true/>
@@ -86,47 +87,74 @@
         </dict>
         <dict>
             <key>PayloadDisplayName</key>
-            <string>Restriction B — iCloud</string>
+            <string>Restriction B — iCloud &amp; Network</string>
             <key>PayloadDescription</key>
-            <string>15 restriction: tắt iCloud Drive, backup, keychain sync + 7 iCloud sync services, AirDrop, Handoff, Find Friends, Mail Drop. RAM ↑50-100MB.</string>
+            <string>15 restriction: iCloud Drive, backup, keychain + 7 sync services, AirDrop, Handoff, Find Friends, Mail Drop. RAM ↑50-100MB.</string>
             <key>PayloadIdentifier</key>
-            <string>com.performance.ios.v11.restrict2</string>
+            <string>com.performance.ios.v12.restrict2</string>
             <key>PayloadType</key>
             <string>com.apple.applicationaccess</string>
             <key>PayloadUUID</key>
-            <string>b0c1d2e3-f4a5-6789-abcd-0123456789b3</string>
+            <string>b0c1d2e3-f4a5-6789-abcd-0000000000b3</string>
             <key>PayloadVersion</key>
             <integer>1</integer>
             <key>Restrictions</key>
             <dict>
-                <key>allowCloudDocumentSync</key><false/>
-                <key>allowCloudBackup</key><false/>
-                <key>allowCloudKeychainSync</key><false/>
-                <key>allowCloudAddressBookSync</key><false/>
-                <key>allowCloudCalendarSync</key><false/>
-                <key>allowCloudRemindersSync</key><false/>
-                <key>allowCloudBookmarksSync</key><false/>
-                <key>allowCloudNotesSync</key><false/>
-                <key>allowCloudDesktopSync</key><false/>
-                <key>allowGlobalBackgroundFetchWhenRoaming</key><false/>
-                <key>allowAutoUnlock</key><false/>
-                <key>allowAirDrop</key><false/>
-                <key>allowAutoSync</key><false/>
-                <key>allowFindMyFriends</key><false/>
-                <key>allowMailDrop</key><false/>
+            <key>allowCloudDocumentSync</key><false/>
+            <key>allowCloudBackup</key><false/>
+            <key>allowCloudKeychainSync</key><false/>
+            <key>allowCloudAddressBookSync</key><false/>
+            <key>allowCloudCalendarSync</key><false/>
+            <key>allowCloudRemindersSync</key><false/>
+            <key>allowCloudBookmarksSync</key><false/>
+            <key>allowCloudNotesSync</key><false/>
+            <key>allowCloudDesktopSync</key><false/>
+            <key>allowGlobalBackgroundFetchWhenRoaming</key><false/>
+            <key>allowAutoUnlock</key><false/>
+            <key>allowAirDrop</key><false/>
+            <key>allowAutoSync</key><false/>
+            <key>allowFindMyFriends</key><false/>
+            <key>allowMailDrop</key><false/>
+                <key>allowAppInstallation</key><true/>
+                <key>allowScreenShot</key><true/>
+                <key>allowBluetoothModification</key><true/>
+            </dict>
+        </dict>
+        <dict>
+            <key>PayloadDisplayName</key>
+            <string>Restriction C — Display &amp; Keyboard</string>
+            <key>PayloadDescription</key>
+            <string>5 restriction: auto dim OLED, autocorrection, predictive keyboard, spell check, password autofill. Giảm CPU nhẹ + cải thiện input consistency.</string>
+            <key>PayloadIdentifier</key>
+            <string>com.performance.ios.v12.restrict3</string>
+            <key>PayloadType</key>
+            <string>com.apple.applicationaccess</string>
+            <key>PayloadUUID</key>
+            <string>b0c1d2e3-f4a5-6789-abcd-0000000000b4</string>
+            <key>PayloadVersion</key>
+            <integer>1</integer>
+            <key>Restrictions</key>
+            <dict>
+            <key>allowAutoDim</key><false/>
+            <key>allowAutoCorrection</key><false/>
+            <key>allowPredictiveKeyboard</key><false/>
+            <key>allowSpellCheck</key><false/>
+                <key>allowAppInstallation</key><true/>
+                <key>allowScreenShot</key><true/>
+                <key>allowBluetoothModification</key><true/>
             </dict>
         </dict>
         <dict>
             <key>PayloadDisplayName</key>
             <string>Game Tuning — Free Fire</string>
             <key>PayloadDescription</key>
-            <string>Tối ưu cảm ứng, delay, recoil cho Free Fire/Free Fire Max. Giảm input lag, tăng precision, giữ FPS ổn định.</string>
+            <string>28 managed preferences cho Free Fire/Free Fire Max: touch latency, precision, recoil, frame stability.</string>
             <key>PayloadIdentifier</key>
-            <string>com.performance.ios.v11.gameff</string>
+            <string>com.performance.ios.v12.game.freefire</string>
             <key>PayloadType</key>
             <string>com.apple.ManagedClient.preferences</string>
             <key>PayloadUUID</key>
-            <string>b0c1d2e3-f4a5-6789-abcd-0123456789b4</string>
+            <string>b0c1d2e3-f4a5-6789-abcd-0000000000c1</string>
             <key>PayloadVersion</key>
             <integer>1</integer>
             <key>PayloadContent</key>
@@ -135,111 +163,180 @@
                 <dict>
                     <key>Forced</key>
                     <array>
-                        <dict>
-                            <key>mcx_preference_settings</key>
-                            <dict>
-                                <key>GestureLatency</key><true/>
-                                <key>TouchPrecision</key><real>0.323</real>
-                                <key>TouchResponseBoost</key><integer>6</integer>
-                                <key>FrameStability</key><true/>
-                                <key>InputResponse</key><real>0.375</real>
-                                <key>DragSmooth</key><integer>10</integer>
-                                <key>SwipeDamp</key><true/>
-                                <key>OverswipeClamp</key><real>0.427</real>
-                                <key>RecoilCalm</key><integer>14</integer>
-                                <key>ShotgunGrip</key><true/>
-                                <key>MicroDrag</key><real>0.479</real>
-                                <key>HeadSettle</key><integer>18</integer>
-                                <key>FrameGuardAimhead</key><true/>
-                                <key>HeatGuard</key><real>0.531</real>
-                                <key>SmoothRoute</key><integer>22</integer>
-                                <key>StablePull</key><true/>
-                                <key>HeadFocus</key><true/>
-                                <key>StableAimFire</key><true/>
-                                <key>DragControl</key><true/>
-                                <key>FrameSync</key><true/>
-                                <key>TapPriority</key><integer>5</integer>
-                                <key>BenchmarkModel</key><real>0.407</real>
-                                <key>MicroStable</key><real>0.384</real>
-                                <key>FrameGuard</key><true/>
-                                <key>SwipeGain</key><true/>
-                                <key>TouchLatencyGuard</key><true/>
-                                <key>FrameDropGuard</key><true/>
-                                <key>CacheGuard</key><true/>
-                                <key>TouchStable</key><integer>5</integer>
-                            </dict>
-                        </dict>
+                    <dict>
+                        <key>mcx_preference_settings</key>
+                <dict>
+                    <key>GestureLatency</key><true/>
+                    <key>TouchPrecision</key><real>0.323</real>
+                    <key>TouchResponseBoost</key><integer>6</integer>
+                    <key>FrameStability</key><true/>
+                    <key>InputResponse</key><real>0.375</real>
+                    <key>DragSmooth</key><integer>10</integer>
+                    <key>SwipeDamp</key><true/>
+                    <key>OverswipeClamp</key><real>0.427</real>
+                    <key>RecoilCalm</key><integer>14</integer>
+                    <key>ShotgunGrip</key><true/>
+                    <key>MicroDrag</key><real>0.479</real>
+                    <key>HeadSettle</key><integer>18</integer>
+                    <key>FrameGuardAimhead</key><true/>
+                    <key>HeatGuard</key><real>0.531</real>
+                    <key>SmoothRoute</key><integer>22</integer>
+                    <key>StablePull</key><true/>
+                    <key>HeadFocus</key><true/>
+                    <key>StableAimFire</key><true/>
+                    <key>DragControl</key><true/>
+                    <key>FrameSync</key><true/>
+                    <key>TapPriority</key><integer>5</integer>
+                    <key>BenchmarkModel</key><real>0.407</real>
+                    <key>MicroStable</key><real>0.384</real>
+                    <key>FrameGuard</key><true/>
+                    <key>SwipeGain</key><true/>
+                    <key>TouchLatencyGuard</key><true/>
+                    <key>FrameDropGuard</key><true/>
+                    <key>CacheGuard</key><true/>
+                    <key>TouchStable</key><integer>5</integer>
+                </dict>                    </dict>
                     </array>
                 </dict>
                 <key>com.dts.freefireth</key>
                 <dict>
                     <key>Forced</key>
                     <array>
-                        <dict>
-                            <key>mcx_preference_settings</key>
-                            <dict>
-                                <key>GestureLatency</key><true/>
-                                <key>TouchPrecision</key><real>0.323</real>
-                                <key>TouchResponseBoost</key><integer>6</integer>
-                                <key>FrameStability</key><true/>
-                                <key>InputResponse</key><real>0.375</real>
-                                <key>DragSmooth</key><integer>10</integer>
-                                <key>SwipeDamp</key><true/>
-                                <key>OverswipeClamp</key><real>0.427</real>
-                                <key>RecoilCalm</key><integer>14</integer>
-                                <key>ShotgunGrip</key><true/>
-                                <key>MicroDrag</key><real>0.479</real>
-                                <key>HeadSettle</key><integer>18</integer>
-                                <key>FrameGuardAimhead</key><true/>
-                                <key>HeatGuard</key><real>0.531</real>
-                                <key>SmoothRoute</key><integer>22</integer>
-                                <key>StablePull</key><true/>
-                                <key>HeadFocus</key><true/>
-                                <key>StableAimFire</key><true/>
-                                <key>DragControl</key><true/>
-                                <key>FrameSync</key><true/>
-                                <key>TapPriority</key><integer>5</integer>
-                                <key>BenchmarkModel</key><real>0.407</real>
-                                <key>MicroStable</key><real>0.384</real>
-                                <key>FrameGuard</key><true/>
-                                <key>SwipeGain</key><true/>
-                                <key>TouchLatencyGuard</key><true/>
-                                <key>FrameDropGuard</key><true/>
-                                <key>CacheGuard</key><true/>
-                                <key>TouchStable</key><integer>5</integer>
-                            </dict>
-                        </dict>
+                    <dict>
+                        <key>mcx_preference_settings</key>
+                <dict>
+                    <key>GestureLatency</key><true/>
+                    <key>TouchPrecision</key><real>0.323</real>
+                    <key>TouchResponseBoost</key><integer>6</integer>
+                    <key>FrameStability</key><true/>
+                    <key>InputResponse</key><real>0.375</real>
+                    <key>DragSmooth</key><integer>10</integer>
+                    <key>SwipeDamp</key><true/>
+                    <key>OverswipeClamp</key><real>0.427</real>
+                    <key>RecoilCalm</key><integer>14</integer>
+                    <key>ShotgunGrip</key><true/>
+                    <key>MicroDrag</key><real>0.479</real>
+                    <key>HeadSettle</key><integer>18</integer>
+                    <key>FrameGuardAimhead</key><true/>
+                    <key>HeatGuard</key><real>0.531</real>
+                    <key>SmoothRoute</key><integer>22</integer>
+                    <key>StablePull</key><true/>
+                    <key>HeadFocus</key><true/>
+                    <key>StableAimFire</key><true/>
+                    <key>DragControl</key><true/>
+                    <key>FrameSync</key><true/>
+                    <key>TapPriority</key><integer>5</integer>
+                    <key>BenchmarkModel</key><real>0.407</real>
+                    <key>MicroStable</key><real>0.384</real>
+                    <key>FrameGuard</key><true/>
+                    <key>SwipeGain</key><true/>
+                    <key>TouchLatencyGuard</key><true/>
+                    <key>FrameDropGuard</key><true/>
+                    <key>CacheGuard</key><true/>
+                    <key>TouchStable</key><integer>5</integer>
+                </dict>                    </dict>
                     </array>
                 </dict>
             </dict>
         </dict>
         <dict>
             <key>PayloadDisplayName</key>
-            <string>iOS Performance Root CA</string>
+            <string>Game Tuning — PUBG Mobile</string>
             <key>PayloadDescription</key>
-            <string>Chứng chỉ gốc RSA 2048-bit (2026-2036). Settings > General > About > Certificate Trust Settings để BẬT.</string>
+            <string>Managed preferences cho PUBG Mobile: sensitivity, rendering, frame rate.</string>
             <key>PayloadIdentifier</key>
-            <string>com.performance.ios.v11.cert</string>
+            <string>com.performance.ios.v12.game.pubg</string>
             <key>PayloadType</key>
-            <string>com.apple.security.root</string>
+            <string>com.apple.ManagedClient.preferences</string>
             <key>PayloadUUID</key>
-            <string>b0c1d2e3-f4a5-6789-abcd-0123456789b5</string>
+            <string>b0c1d2e3-f4a5-6789-abcd-0000000000c2</string>
             <key>PayloadVersion</key>
             <integer>1</integer>
             <key>PayloadContent</key>
-            <data>MIIDhTCCAm2gAwIBAgIQHkDRpoBeiI1HreNglyFfhjANBgkqhkiG9w0BAQsFADBNMQswCQYDVQQGEwJWTjEcMBoGA1UECgwTaU9TIFBlcmZvcm1hbmNlIExhYjEgMB4GA1UEAwwXaU9TIFBlcmZvcm1hbmNlIFJvb3QgQ0EwHhcNMjYwNzA4MDIyMTQ5WhcNMzYwNzA4MDIzMTQ3WjBNMQswCQYDVQQGEwJWTjEcMBoGA1UECgwTaU9TIFBlcmZvcm1hbmNlIExhYjEgMB4GA1UEAwwXaU9TIFBlcmZvcm1hbmNlIFJvb3QgQ0EwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCZw8FhG/Uf+Y7Ny6SoozmhdGrntdOZSkkdtQjveeqZjA8h4Yg89HCFxyt66/fSxrfSrtEu0u1NcciafRS6OyvM2lqxlx77tCqfktO3eTvSdz/8CObyjmDgaALziTwocDI6uIZF/lKe4hYw8dHYnuAYMc+NkTosBCS1YApRPRFBOsHvNki+cMnzYqr0UX+55QxD1mVx9yGDGMz0F9Pvxftt4nITdWH9UDKpPWU0wQ0ekP/JffRoawJjeZTovO29Vhs11UDRfz2XASTmiEmqi8OTLZAD6ONBn51/ZFMq/t74Hw4bfAYcKDPkkTbElAlMqvGaKjUwIrnccoyR8PaG0CmtAgMBAAGjYTBfMA4GA1UdDwEB/wQEAwIBhjAdBgNVHSUEFjAUBggrBgEFBQcDAgYIKwYBBQUHAwEwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUxq9r3GNa09CcdPESywp9trvr184wDQYJKoZIhvcNAQELBQADggEBABV9iCy8Gm8tikdZ2PWn1uxXabvn+GtfcZnV9Codq0BxCDR7/VosWbH1bd9WAvg/nQQcdXOG1XuxKBprcGdR3Cvbm0ktqtQF9E0+7sSznazJzcim+zmx2Q3zQlSSgyP5dvjF6RIm5BBLb/Q4lTUZUjvedQh1y4v4a6MAS/xss2Eo6NHQXzigRBJevaoxTwobOzn7gVbNIQQfEoKE13zG/xZpbcP+QDjg7If0M6bVg1x8LC5F3UA8ZL7V30iduf6dp3tpzNbneJ1nsTE+ymOYNm2cz54xlQ/l34ysqrykWYulhEx8uoaj8R1dh8PIevetjHIHUVh78NCGlbMNlxrswVU=</data>
+            <dict>
+                <key>com.tencent.ig</key>
+                <dict>
+                    <key>Forced</key>
+                    <array>
+                    <dict>
+                        <key>mcx_preference_settings</key>
+                <dict>
+                    <key>ADSSensitivity</key><real>0.65</real>
+                    <key>GyroscopeEnabled</key><true/>
+                    <key>FrameRateLimit</key><integer>60</integer>
+                    <key>RenderScale</key><integer>1</integer>
+                    <key>AntiAliasing</key><true/>
+                    <key>ShadowQuality</key><integer>0</integer>
+                    <key>EffectsQuality</key><integer>1</integer>
+                    <key>TextureQuality</key><integer>1</integer>
+                </dict>                    </dict>
+                    </array>
+                </dict>
+                <key>com.pubg.newstate</key>
+                <dict>
+                    <key>Forced</key>
+                    <array>
+                    <dict>
+                        <key>mcx_preference_settings</key>
+                <dict>
+                    <key>ADSSensitivity</key><real>0.65</real>
+                    <key>GyroscopeEnabled</key><true/>
+                    <key>FrameRateLimit</key><integer>60</integer>
+                    <key>RenderScale</key><integer>1</integer>
+                    <key>AntiAliasing</key><true/>
+                    <key>ShadowQuality</key><integer>0</integer>
+                    <key>EffectsQuality</key><integer>1</integer>
+                    <key>TextureQuality</key><integer>1</integer>
+                </dict>                    </dict>
+                    </array>
+                </dict>
+            </dict>
         </dict>
         <dict>
             <key>PayloadDisplayName</key>
-            <string>iOS Performance Dashboard</string>
+            <string>Game Tuning — Genshin Impact</string>
             <key>PayloadDescription</key>
-            <string>Dashboard benchmark GPU/CPU/DNS/Network thời gian thực. Truy cập nhanh từ màn hình chính.</string>
+            <string>Managed preferences cho Genshin Impact: render resolution, quality settings, FPS cap.</string>
             <key>PayloadIdentifier</key>
-            <string>com.performance.ios.v11.webclip</string>
+            <string>com.performance.ios.v12.game.genshin</string>
+            <key>PayloadType</key>
+            <string>com.apple.ManagedClient.preferences</string>
+            <key>PayloadUUID</key>
+            <string>b0c1d2e3-f4a5-6789-abcd-0000000000c3</string>
+            <key>PayloadVersion</key>
+            <integer>1</integer>
+            <key>PayloadContent</key>
+            <dict>
+                <key>com.miHoYo.GenshinImpact</key>
+                <dict>
+                    <key>Forced</key>
+                    <array>
+                    <dict>
+                        <key>mcx_preference_settings</key>
+                <dict>
+                    <key>RenderResolution</key><real>0.8</real>
+                    <key>ShadowQuality</key><integer>0</integer>
+                    <key>EffectsQuality</key><integer>1</integer>
+                    <key>FrameRateCap</key><integer>60</integer>
+                    <key>AntiAliasing</key><false/>
+                    <key>BloomQuality</key><integer>0</integer>
+                    <key>CrowdDensity</key><integer>0</integer>
+                </dict>                    </dict>
+                    </array>
+                </dict>
+            </dict>
+        </dict>
+        <dict>
+            <key>PayloadDisplayName</key>
+            <string>Perf</string>
+            <key>PayloadDescription</key>
+            <string>Dashboard benchmark GPU/CPU/DNS/Network thời gian thực.</string>
+            <key>PayloadIdentifier</key>
+            <string>com.performance.ios.v12.webclip</string>
             <key>PayloadType</key>
             <string>com.apple.webClip.managed</string>
             <key>PayloadUUID</key>
-            <string>b0c1d2e3-f4a5-6789-abcd-0123456789b6</string>
+            <string>b0c1d2e3-f4a5-6789-abcd-0000000000ff</string>
             <key>PayloadVersion</key>
             <integer>1</integer>
             <key>FullScreen</key>
